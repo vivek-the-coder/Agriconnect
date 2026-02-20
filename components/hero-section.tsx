@@ -4,13 +4,13 @@ import Image from "next/image"
 
 export function HeroSection() {
   return (
-    <section className="relative bg-gradient-to-br from-primary/5 to-secondary/5 py-20 lg:py-32">
+    <section className="relative bg-gradient-to-br from-primary/5 to-secondary/5 py-12 md:py-20 lg:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight">
                 Connecting Farmers to <span className="text-primary">Global Markets</span>
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed">
@@ -20,13 +20,13 @@ export function HeroSection() {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="text-lg px-8 py-6">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Button size="lg" className="text-lg px-8 py-7 md:py-6 w-full sm:w-auto h-auto">
                 <Users className="mr-2 h-5 w-5" />
                 Join as Farmer
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 bg-transparent">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-7 md:py-6 bg-transparent w-full sm:w-auto h-auto">
                 <Globe className="mr-2 h-5 w-5" />
                 Join as Exporter
                 <ArrowRight className="ml-2 h-5 w-5" />
