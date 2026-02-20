@@ -21,17 +21,14 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="font-semibold text-foreground">Quick Links</h3>
             <div className="space-y-2">
-              <Link href="/about" className="block text-muted-foreground hover:text-primary transition-colors">
-                About
-              </Link>
               <Link href="/contact" className="block text-muted-foreground hover:text-primary transition-colors">
                 Contact
               </Link>
-              <Link href="/privacy" className="block text-muted-foreground hover:text-primary transition-colors">
-                Privacy Policy
+              <Link href="/schemes" className="block text-muted-foreground hover:text-primary transition-colors">
+                Government Schemes
               </Link>
-              <Link href="/terms" className="block text-muted-foreground hover:text-primary transition-colors">
-                Terms
+              <Link href="/export-hub" className="block text-muted-foreground hover:text-primary transition-colors">
+                Export Hub
               </Link>
             </div>
           </div>

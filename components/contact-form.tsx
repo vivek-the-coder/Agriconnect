@@ -1,16 +1,17 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
+import { supabase } from "@/lib/supabase"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Phone, MapPin, Clock, Send } from "lucide-react"
+import { Mail, Phone, MapPin, Clock, Send, Loader2 } from "lucide-react"
 
 export default function ContactForm() {
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,13 +19,25 @@ export default function ContactForm() {
     message: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log("Contact form submitted:", formData)
-    // Reset form
-    setFormData({ name: "", email: "", subject: "", message: "" })
-    alert("Thank you for your message! We will get back to you soon.")
+    setLoading(true)
+
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([formData])
+
+      if (error) throw error
+
+      toast.success("Message sent successfully! We'll get back to you soon.")
+      setFormData({ name: "", email: "", subject: "", message: "" })
+    } catch (error: any) {
+      console.error("Error sending message:", error)
+      toast.error(error.message || "Failed to send message. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -67,6 +80,7 @@ export default function ContactForm() {
                     onChange={handleChange}
                     placeholder="Enter your full name"
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -79,6 +93,7 @@ export default function ContactForm() {
                     onChange={handleChange}
                     placeholder="Enter your email"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -92,6 +107,7 @@ export default function ContactForm() {
                   onChange={handleChange}
                   placeholder="What is this regarding?"
                   required
+                  disabled={loading}
                 />
               </div>
 
@@ -105,12 +121,22 @@ export default function ContactForm() {
                   placeholder="Tell us more about your inquiry..."
                   rows={6}
                   required
+                  disabled={loading}
                 />
               </div>
 
-              <Button type="submit" className="w-full">
-                <Send className="h-4 w-4 mr-2" />
-                Send Message
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Message
+                  </>
+                )}
               </Button>
             </form>
           </CardContent>

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, Globe } from "lucide-react"
+import Image from "next/image"
 
 export function HeroSection() {
   return (
@@ -35,10 +36,13 @@ export function HeroSection() {
 
           {/* Hero Image */}
           <div className="relative">
-            <img
+            <Image
               src="/modern-farmers-using-technology-with-tractors-and-.png"
               alt="Farmers and exporters connecting"
+              width={800}
+              height={600}
               className="w-full h-auto rounded-lg shadow-2xl"
+              priority
             />
           </div>
         </div>

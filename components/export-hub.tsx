@@ -56,17 +56,47 @@ const cropListings = [
   {
     id: 3,
     cropName: "Turmeric",
-    variety: "Curcuma Longa",
+    variety: "Nizamabad Grade A",
     quantity: "50 tons",
-    location: "Tamil Nadu, India",
-    farmer: "Murugan Pillai",
+    location: "Telangana, India",
+    farmer: "Venkatesh Rao",
     contact: "+91 76543 21098",
-    email: "murugan.pillai@email.com",
-    priceRange: "₹80-90 per kg",
+    email: "venkatesh.rao@email.com",
+    priceRange: "₹120-140 per kg",
     harvestDate: "2024-02-10",
-    quality: "Premium",
+    quality: "Premium (High Curcumin)",
     organic: true,
-    description: "High curcumin content turmeric with bright golden color. Organically certified.",
+    description: "High curcumin content turmeric from Nizamabad. Bright golden color, organically certified.",
+  },
+  {
+    id: 4,
+    cropName: "Mangoes",
+    variety: "Ratnagiri Alfonso",
+    quantity: "5000 boxes",
+    location: "Ratnagiri, Maharashtra",
+    farmer: "Sanjay Mane",
+    contact: "+91 91234 56789",
+    email: "sanjay.mane@email.com",
+    priceRange: "₹1500-2000 per box",
+    harvestDate: "2024-04-01",
+    quality: "Premium Export Quality",
+    organic: true,
+    description: "World-famous Ratnagiri Alphonso mangoes. Naturally ripened, GI tagged, and export ready.",
+  },
+  {
+    id: 5,
+    cropName: "Chilies",
+    variety: "Guntur Sannam (S4)",
+    quantity: "150 tons",
+    location: "Andhra Pradesh, India",
+    farmer: "K. Satyanarayana",
+    contact: "+91 82345 67890",
+    email: "k.satya@email.com",
+    priceRange: "₹180-210 per kg",
+    harvestDate: "2024-03-05",
+    quality: "Grade S4 (Medium Pungency)",
+    organic: false,
+    description: "Famous Guntur Sannam dry red chilies. Rich red color and medium heat, perfect for global spice markets.",
   },
 ]
 
@@ -96,58 +126,106 @@ const jointVentures = [
   },
 ]
 
+import { supabase } from "@/lib/supabase"
+import { toast } from "sonner"
+import { useEffect } from "react"
+
 export function ExportHub() {
   const [activeTab, setActiveTab] = useState("browse")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCrop, setSelectedCrop] = useState("All Crops")
   const [selectedLocation, setSelectedLocation] = useState("All Locations")
+  const [allListings, setAllListings] = useState<any[]>(cropListings)
+  const [loading, setLoading] = useState(false)
 
   // Form state for crop listing
   const [cropForm, setCropForm] = useState({
-    cropName: "",
+    cropname: "",
     variety: "",
     quantity: "",
     location: "",
     farmer: "",
     contact: "",
     email: "",
-    priceRange: "",
-    harvestDate: "",
+    pricerange: "",
+    harvestdate: "",
     quality: "",
     organic: false,
     description: "",
   })
 
-  const filteredCrops = cropListings.filter((crop) => {
+  useEffect(() => {
+    fetchListings()
+  }, [])
+
+  const fetchListings = async () => {
+    const { data, error } = await supabase
+      .from('export_crops')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (!error && data && data.length > 0) {
+      setAllListings([...data, ...cropListings])
+    }
+  }
+
+  const filteredCrops = allListings.filter((crop) => {
     const matchesSearch =
-      crop.cropName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      crop.variety.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      crop.farmer.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCrop = selectedCrop === "All Crops" || crop.cropName === selectedCrop
-    const matchesLocation = selectedLocation === "All Locations" || crop.location.includes(selectedLocation)
+      (crop.cropname || crop.cropName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (crop.variety || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (crop.farmer || "").toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCrop = selectedCrop === "All Crops" || (crop.cropname || crop.cropName) === selectedCrop
+    const matchesLocation = selectedLocation === "All Locations" || (crop.location && crop.location.includes(selectedLocation))
 
     return matchesSearch && matchesCrop && matchesLocation
   })
 
-  const handleSubmitCrop = (e: React.FormEvent) => {
+  const handleSubmitCrop = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    console.log("Crop listing submitted:", cropForm)
-    // Reset form
-    setCropForm({
-      cropName: "",
-      variety: "",
-      quantity: "",
-      location: "",
-      farmer: "",
-      contact: "",
-      email: "",
-      priceRange: "",
-      harvestDate: "",
-      quality: "",
-      organic: false,
-      description: "",
-    })
+    setLoading(true)
+
+    const cropToInsert = {
+      cropname: cropForm.cropname,
+      variety: cropForm.variety,
+      quantity: cropForm.quantity,
+      location: cropForm.location,
+      farmer: cropForm.farmer,
+      contact: cropForm.contact,
+      email: cropForm.email,
+      pricerange: cropForm.pricerange,
+      harvestdate: cropForm.harvestdate,
+      quality: cropForm.quality,
+      organic: cropForm.organic,
+      description: cropForm.description
+    }
+
+    const { error } = await supabase
+      .from('export_crops')
+      .insert([cropToInsert])
+
+    if (error) {
+      toast.error("Failed to list crop: " + error.message)
+    } else {
+      toast.success("Crop listed successfully for export!")
+      setActiveTab("browse")
+      fetchListings()
+      // Reset form
+      setCropForm({
+        cropname: "",
+        variety: "",
+        quantity: "",
+        location: "",
+        farmer: "",
+        contact: "",
+        email: "",
+        pricerange: "",
+        harvestdate: "",
+        quality: "",
+        organic: false,
+        description: "",
+      })
+    }
+    setLoading(false)
   }
 
   return (
@@ -227,7 +305,7 @@ export function ExportHub() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-xl">{crop.cropName}</CardTitle>
+                        <CardTitle className="text-xl">{crop.cropname || crop.cropName}</CardTitle>
                         <CardDescription className="text-base">{crop.variety}</CardDescription>
                       </div>
                       <div className="flex gap-2">
@@ -248,7 +326,7 @@ export function ExportHub() {
                       </div>
                       <div>
                         <span className="font-medium">Price Range:</span>
-                        <p className="text-primary font-semibold">{crop.priceRange}</p>
+                        <p className="text-primary font-semibold">{crop.pricerange || crop.priceRange}</p>
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -256,7 +334,7 @@ export function ExportHub() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{crop.harvestDate}</span>
+                        <span className="text-muted-foreground">{crop.harvestdate || crop.harvestDate}</span>
                       </div>
                     </div>
 
@@ -275,7 +353,12 @@ export function ExportHub() {
                             </div>
                           </div>
                         </div>
-                        <Button>Contact Farmer</Button>
+                        <Button onClick={() => {
+                          const subject = encodeURIComponent(`Inquiry for ${crop.cropname || crop.cropName}`)
+                          const body = encodeURIComponent(`Hello ${crop.farmer},\n\nI am interested in your ${crop.variety} ${crop.cropname || crop.cropName} listed on AgriConnect.\n\nRegards,`)
+                          window.location.href = `mailto:${crop.email || ''}?subject=${subject}&body=${body}`
+                          toast.success("Opening email client...")
+                        }}>Contact Farmer</Button>
                       </div>
                     </div>
                   </CardContent>
@@ -302,8 +385,8 @@ export function ExportHub() {
                     <div className="space-y-2">
                       <Label htmlFor="cropName">Crop Name *</Label>
                       <Select
-                        value={cropForm.cropName}
-                        onValueChange={(value) => setCropForm({ ...cropForm, cropName: value })}
+                        value={cropForm.cropname}
+                        onValueChange={(value) => setCropForm({ ...cropForm, cropname: value })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select crop type" />
@@ -387,9 +470,9 @@ export function ExportHub() {
                     <div className="space-y-2">
                       <Label htmlFor="priceRange">Expected Price Range</Label>
                       <Input
-                        id="priceRange"
-                        value={cropForm.priceRange}
-                        onChange={(e) => setCropForm({ ...cropForm, priceRange: e.target.value })}
+                        id="pricerange"
+                        value={cropForm.pricerange}
+                        onChange={(e) => setCropForm({ ...cropForm, pricerange: e.target.value })}
                         placeholder="e.g., ₹45-50 per kg"
                       />
                     </div>
@@ -397,10 +480,10 @@ export function ExportHub() {
                     <div className="space-y-2">
                       <Label htmlFor="harvestDate">Harvest Date</Label>
                       <Input
-                        id="harvestDate"
+                        id="harvestdate"
                         type="date"
-                        value={cropForm.harvestDate}
-                        onChange={(e) => setCropForm({ ...cropForm, harvestDate: e.target.value })}
+                        value={cropForm.harvestdate}
+                        onChange={(e) => setCropForm({ ...cropForm, harvestdate: e.target.value })}
                       />
                     </div>
 
@@ -445,8 +528,8 @@ export function ExportHub() {
                     <Label htmlFor="organic">This is an organically grown crop</Label>
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full">
-                    List Your Crop
+                  <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                    {loading ? "Listing..." : "List Your Crop"}
                   </Button>
                 </form>
               </CardContent>

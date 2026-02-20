@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, ExternalLink, Calendar, Users, DollarSign } from "lucide-react"
+import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
+import { useEffect } from "react"
 
 // Mock data for government schemes
 const schemes = [
@@ -98,9 +101,23 @@ export function SchemesDirectory() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedState, setSelectedState] = useState("All States")
   const [selectedType, setSelectedType] = useState("All Types")
-  const [selectedScheme, setSelectedScheme] = useState<(typeof schemes)[0] | null>(null)
+  const [allSchemes, setAllSchemes] = useState<any[]>(schemes)
+  const [selectedScheme, setSelectedScheme] = useState<any | null>(null)
 
-  const filteredSchemes = schemes.filter((scheme) => {
+  useEffect(() => {
+    async function fetchSchemes() {
+      const { data, error } = await supabase
+        .from('schemes')
+        .select('*')
+
+      if (!error && data && data.length > 0) {
+        setAllSchemes(data)
+      }
+    }
+    fetchSchemes()
+  }, [])
+
+  const filteredSchemes = allSchemes.filter((scheme) => {
     const matchesSearch =
       scheme.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       scheme.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -193,9 +210,8 @@ export function SchemesDirectory() {
               {filteredSchemes.map((scheme) => (
                 <Card
                   key={scheme.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden ${
-                    selectedScheme?.id === scheme.id ? "ring-2 ring-primary" : ""
-                  }`}
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden ${selectedScheme?.id === scheme.id ? "ring-2 ring-primary" : ""
+                    }`}
                   onClick={() => setSelectedScheme(scheme)}
                 >
                   <div className="flex">
@@ -290,11 +306,21 @@ export function SchemesDirectory() {
                     </div>
 
                     <div className="space-y-3">
-                      <Button className="w-full">
+                      <Button className="w-full" onClick={() => {
+                        toast.success(`Redirecting to ${selectedScheme.name} application portal...`)
+                        // In a real app, this would use selectedScheme.application_url
+                        setTimeout(() => {
+                          window.open('https://www.india.gov.in/my-government/schemes', '_blank')
+                        }, 1000)
+                      }}>
                         Apply Now
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </Button>
-                      <Button variant="outline" className="w-full bg-transparent">
+                      <Button
+                        variant="outline"
+                        className="w-full bg-transparent"
+                        onClick={() => toast.info("Guidelines downloading...")}
+                      >
                         Download Guidelines
                       </Button>
                     </div>

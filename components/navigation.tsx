@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Sprout, LogOut, User } from "lucide-react"
+import { Menu, X, Sprout, LogOut, User, Settings } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
@@ -71,6 +71,12 @@ export function Navigation() {
                     <User className="h-4 w-4" />
                     <span className="text-xs font-semibold max-w-[100px] truncate">{user.email}</span>
                   </div>
+                  <Link href="/admin">
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary hover:bg-primary/5">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Admin
+                    </Button>
+                  </Link>
                   <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-destructive hover:bg-destructive/5">
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
@@ -124,9 +130,17 @@ export function Navigation() {
               <div className="pt-4 space-y-2">
                 {user ? (
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary/5 text-primary border border-primary/10">
-                      <User className="h-5 w-5" />
-                      <span className="text-sm font-semibold truncate">{user.email}</span>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary/5 text-primary border border-primary/10">
+                        <User className="h-5 w-5" />
+                        <span className="text-sm font-semibold truncate">{user.email}</span>
+                      </div>
+                      <Link href="/admin" onClick={() => setIsOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start font-semibold text-muted-foreground">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Admin Panel
+                        </Button>
+                      </Link>
                     </div>
                     <Button variant="outline" onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full justify-center font-semibold text-destructive border-destructive/20 hover:bg-destructive/5">
                       <LogOut className="h-4 w-4 mr-2" />

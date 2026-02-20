@@ -11,9 +11,31 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://agriconnect.com"),
   title: "AgriConnect - Connecting Farmers to Global Markets",
-  description: "One platform for schemes, exports, community, and modern farming tools.",
-  generator: "v0.app",
+  description: "One platform for schemes, exports, community, and modern farming tools. Empowering farmers with technology and global connections.",
+  openGraph: {
+    title: "AgriConnect",
+    description: "One platform for farmers and exporters.",
+    url: "https://agriconnect.com",
+    siteName: "AgriConnect",
+    images: [
+      {
+        url: "/modern-farmers-using-technology-with-tractors-and-.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AgriConnect",
+    description: "One platform for farmers and exporters.",
+    images: ["/modern-farmers-using-technology-with-tractors-and-.png"],
+  },
+  generator: "Next.js",
 }
 
 export default function RootLayout({
@@ -22,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} antialiased`}>
+    <html lang="en" className={`${dmSans.variable} antialiased`} suppressHydrationWarning>
       <body className="font-sans">
         {children}
         <Toaster position="top-center" richColors />
