@@ -273,7 +273,8 @@ alter table tools add column if not exists user_id uuid references auth.users(id
 alter table tools add column if not exists category text;
 alter table tools add column if not exists vendor text;
 
-alter table export_crops add column if not exists user_id uuid references auth.users(id);
+alter table forum_posts add column if not exists author_avatar text;
+alter table forum_posts add column if not exists user_id uuid references auth.users(id);
 
 -- 11. Razorpay Payment Tracking (Invoices)
 alter table orders add column if not exists razorpay_order_id text;
