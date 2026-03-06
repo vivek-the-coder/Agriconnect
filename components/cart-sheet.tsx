@@ -145,6 +145,7 @@ export function CartSheet() {
                     console.error("Failed to record failure:", err);
                 }
             });
+            setIsOpen(false);
             rzp.open();
         } catch (error: any) {
             toast.error(error.message || "An error occurred during checkout");
