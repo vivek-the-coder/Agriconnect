@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -31,6 +31,7 @@ import {
   Lightbulb,
   AlertTriangle,
   Loader2,
+  RefreshCw,
 } from "lucide-react"
 
 const mockForumPosts = [
@@ -85,6 +86,7 @@ export function CommunityForum() {
   const [selectedCategory, setSelectedCategory] = useState("All Categories")
   const [sortBy, setSortBy] = useState("recent")
   const [showNewPostDialog, setShowNewPostDialog] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const [newPost, setNewPost] = useState({
     title: "",
@@ -93,16 +95,12 @@ export function CommunityForum() {
     tags: "",
   })
 
-  useEffect(() => {
-    fetchPosts()
-  }, [])
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       setLoading(true)
+      setFetchError(null)
       console.log("Fetching forum posts from Supabase...")
 
-      // Attempt a simpler query first to ensure basic connectivity
       const { data, error } = await supabase
         .from('forum_posts')
         .select('*')
@@ -110,7 +108,6 @@ export function CommunityForum() {
 
       if (error) {
         console.error("Supabase query error:", error)
-        // Handle common "table missing" or "schema cache" errors gracefully
         if (error.code === 'PGRST116' || error.message?.includes("schema cache") || error.message?.includes("relation") || error.message?.includes("does not exist") || error.code === '42P01') {
           console.warn("Table 'forum_posts' not found, falling back to mock data.")
           setPosts(mockForumPosts)
@@ -123,18 +120,22 @@ export function CommunityForum() {
       if (!data || data.length === 0) {
         setPosts(mockForumPosts)
       } else {
-        // Merge live data with mock data
         setPosts([...data, ...mockForumPosts])
       }
     } catch (err: any) {
       console.error("Critical error in fetchPosts:", err)
       const errorMsg = err.message || "Unknown error"
+      setFetchError(errorMsg)
       toast.error(`Live data unavailable: ${errorMsg}`)
       setPosts(mockForumPosts)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchPosts()
+  }, [fetchPosts])
 
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -183,7 +184,6 @@ export function CommunityForum() {
   const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === "popular") return (Number(b.likes) || 0) - (Number(a.likes) || 0)
     if (sortBy === "replies") return (Number(b.replies) || 0) - (Number(a.replies) || 0)
-    // Default to recent
     const dateA = new Date(a.created_at || 0).getTime()
     const dateB = new Date(b.created_at || 0).getTime()
     return dateB - dateA
@@ -205,6 +205,16 @@ export function CommunityForum() {
             Connect with fellow farmers, share experiences, and learn from the community.
           </p>
         </div>
+
+        {fetchError && (
+          <div className="mb-6 flex items-center justify-center gap-4 p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
+            <span className="text-sm">Live data sync issue. Syncing failed with timeout.</span>
+            <Button variant="outline" size="sm" onClick={() => fetchPosts()} className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Retry Sync
+            </Button>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1 space-y-6">

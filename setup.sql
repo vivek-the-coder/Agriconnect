@@ -38,6 +38,9 @@ create table if not exists seeds (
   category text,
   stock text,
   image text,
+  unit text,
+  vendor text,
+  user_id uuid references auth.users(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table seeds enable row level security;
@@ -65,6 +68,9 @@ create table if not exists tools (
   type text,
   condition text,
   image text,
+  category text,
+  vendor text,
+  user_id uuid references auth.users(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table tools enable row level security;
@@ -87,14 +93,16 @@ $$;
 create table if not exists equipment (
   id uuid default gen_random_uuid() primary key,
   name text not null,
-  category text, -- Added missing column
-  condition text, -- Added missing column
+  category text,
+  condition text,
   description text,
   price text,
   location text,
   year text,
   image text,
   status text default 'Available',
+  user_id uuid references auth.users(id),
+  vendor text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table equipment enable row level security;
@@ -128,6 +136,7 @@ create table if not exists export_crops (
   quality text,
   organic boolean default false,
   description text,
+  user_id uuid references auth.users(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table export_crops enable row level security;
@@ -253,6 +262,7 @@ $$;
 alter table equipment add column if not exists category text;
 alter table equipment add column if not exists condition text;
 alter table equipment add column if not exists user_id uuid references auth.users(id);
+alter table equipment add column if not exists vendor text;
 
 alter table seeds add column if not exists user_id uuid references auth.users(id);
 alter table seeds add column if not exists unit text;
