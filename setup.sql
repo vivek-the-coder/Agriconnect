@@ -46,6 +46,10 @@ begin
     if not exists (select 1 from pg_policies where tablename = 'seeds' and policyname = 'Public read access') then
         create policy "Public read access" on seeds for select using (true);
     end if;
+    -- Added public insert for selling seeds
+    if not exists (select 1 from pg_policies where tablename = 'seeds' and policyname = 'Public insert access') then
+        create policy "Public insert access" on seeds for insert with check (true);
+    end if;
     if not exists (select 1 from pg_policies where tablename = 'seeds' and policyname = 'Admin full access') then
         create policy "Admin full access" on seeds for all using (auth.role() = 'authenticated');
     end if;
@@ -68,6 +72,10 @@ do $$
 begin
     if not exists (select 1 from pg_policies where tablename = 'tools' and policyname = 'Public read access') then
         create policy "Public read access" on tools for select using (true);
+    end if;
+    -- Added public insert for selling tools
+    if not exists (select 1 from pg_policies where tablename = 'tools' and policyname = 'Public insert access') then
+        create policy "Public insert access" on tools for insert with check (true);
     end if;
     if not exists (select 1 from pg_policies where tablename = 'tools' and policyname = 'Admin full access') then
         create policy "Admin full access" on tools for all using (auth.role() = 'authenticated');
@@ -243,6 +251,16 @@ $$;
 alter table equipment add column if not exists category text;
 alter table equipment add column if not exists condition text;
 alter table equipment add column if not exists user_id uuid references auth.users(id);
+
+alter table seeds add column if not exists user_id uuid references auth.users(id);
+alter table seeds add column if not exists unit text;
+alter table seeds add column if not exists vendor text;
+alter table seeds add column if not exists stock text;
+
+alter table tools add column if not exists user_id uuid references auth.users(id);
+alter table tools add column if not exists category text;
+alter table tools add column if not exists vendor text;
+
 alter table export_crops add column if not exists user_id uuid references auth.users(id);
 
 -- 11. Razorpay Payment Tracking (Invoices)

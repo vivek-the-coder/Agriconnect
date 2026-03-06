@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -34,6 +35,7 @@ import {
   Loader2,
   ShoppingCart,
   Filter,
+  Plus,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 
@@ -101,6 +103,16 @@ export function SeedsShop() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
   const { addItem } = useCart()
 
+  const [submitting, setSubmitting] = useState(false)
+  const [newListing, setNewListing] = useState({
+    name: "",
+    category: "",
+    price: "",
+    unit: "pkt",
+    description: "",
+    stock: ""
+  })
+
   const handleAddToCart = (product: any) => {
     addItem({
       product_id: String(product.id),
@@ -125,12 +137,12 @@ export function SeedsShop() {
         .order('created_at', { ascending: false })
 
       if (error) {
-        // Handle "table not found" error (common in initial setup)
         if (error.code === 'PGRST116' || error.message?.includes("schema cache") || error.message?.includes("relation") || error.message?.includes("does not exist")) {
           console.warn("Table 'seeds' not found, falling back to mock data.")
           setSeeds(seedsData)
           return
         }
+        console.error("Supabase error fetching seeds:", error)
         throw error
       }
 
@@ -141,10 +153,35 @@ export function SeedsShop() {
       }
     } catch (err: any) {
       console.error("Error fetching seeds:", err.message)
-      toast.error("Failed to load live seed data")
+      toast.error("Live seed data currenty unavailable. Showing featured collection.")
       setSeeds(seedsData)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSellSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      setSubmitting(true)
+      const { data: { session } } = await supabase.auth.getSession()
+      const { error } = await supabase
+        .from('seeds')
+        .insert([{
+          ...newListing,
+          image: '/placeholder.svg',
+          user_id: session?.user?.id || null,
+        }])
+
+      if (error) throw error
+
+      toast.success("Seed listing submitted successfully!")
+      setNewListing({ name: "", category: "", price: "", unit: "pkt", description: "", stock: "" })
+      fetchSeeds()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to list seeds")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -208,9 +245,13 @@ export function SeedsShop() {
           </p>
         </div>
 
-        <Tabs defaultValue="all" className="space-y-8">
-          <TabsContent value="all" className="space-y-6">
-            {/* Mobile Filter Trigger */}
+        <Tabs defaultValue="buy" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+            <TabsTrigger value="buy">Shop Seeds</TabsTrigger>
+            <TabsTrigger value="sell">Sell My Seeds</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="buy" className="space-y-6">
             <div className="lg:hidden flex justify-end mb-4">
               <Sheet>
                 <SheetTrigger asChild>
@@ -231,12 +272,10 @@ export function SeedsShop() {
             </div>
 
             <div className="grid lg:grid-cols-4 gap-8">
-              {/* Desktop Sidebar */}
               <div className="hidden lg:block lg:col-span-1 space-y-6">
                 <FilterContent />
               </div>
 
-              {/* Product Grid */}
               <div className="lg:col-span-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredProducts.map((product) => (
@@ -250,15 +289,8 @@ export function SeedsShop() {
                         <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
                         <div className="flex items-center justify-between">
                           <span className="text-2xl font-bold text-primary">₹{product.price}</span>
-                          <span className="text-sm text-muted-foreground">{product.vendor}</span>
+                          <span className="text-sm text-muted-foreground">{product.vendor || 'Local Vendor'}</span>
                         </div>
-
-                        <div className="flex flex-wrap gap-1">
-                          {(product.features || []).slice(0, 2).map((f: string) => (
-                            <Badge key={f} variant="outline" className="text-xs">{f}</Badge>
-                          ))}
-                        </div>
-
                         <div className="flex gap-2 pt-2">
                           <Dialog>
                             <DialogTrigger asChild>
@@ -267,7 +299,7 @@ export function SeedsShop() {
                             <DialogContent className="max-w-2xl">
                               <DialogHeader>
                                 <DialogTitle>{product.name}</DialogTitle>
-                                <DialogDescription>{product.vendor}</DialogDescription>
+                                <DialogDescription>{product.vendor || 'Local Vendor'}</DialogDescription>
                               </DialogHeader>
                               {selectedProduct && <ProductDetailsModal product={selectedProduct} />}
                             </DialogContent>
@@ -283,6 +315,54 @@ export function SeedsShop() {
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="sell">
+            <Card className="max-w-3xl mx-auto">
+              <CardHeader>
+                <CardTitle>List Your Seeds</CardTitle>
+                <CardDescription>Reach other farmers by listing your harvested seeds or tissue culture plants</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSellSubmit} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Seed Name *</Label>
+                      <Input value={newListing.name} onChange={e => setNewListing({ ...newListing, name: e.target.value })} required placeholder="e.g., Organic Wheat Seeds" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Category *</Label>
+                      <Select value={newListing.category} onValueChange={v => setNewListing({ ...newListing, category: v })}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Tomato">Tomato</SelectItem>
+                          <SelectItem value="Banana">Banana</SelectItem>
+                          <SelectItem value="Tissue Culture">Tissue Culture</SelectItem>
+                          <SelectItem value="Organic Seeds">Organic Seeds</SelectItem>
+                          <SelectItem value="Cereals">Cereals</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Price (₹) *</Label>
+                      <Input type="number" value={newListing.price} onChange={e => setNewListing({ ...newListing, price: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Unit (e.g., kg, pkt, plant) *</Label>
+                      <Input value={newListing.unit} onChange={e => setNewListing({ ...newListing, unit: e.target.value })} required />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description *</Label>
+                    <Textarea value={newListing.description} onChange={e => setNewListing({ ...newListing, description: e.target.value })} required rows={4} />
+                  </div>
+                  <Button type="submit" className="w-full py-6" disabled={submitting}>
+                    {submitting ? <Loader2 className="animate-spin mr-2" /> : <Plus className="mr-2 h-4 w-4" />}
+                    List Seeds for Sale
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

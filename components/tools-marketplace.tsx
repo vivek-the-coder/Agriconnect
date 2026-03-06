@@ -6,6 +6,8 @@ import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -33,6 +35,7 @@ import {
   TrendingUp,
   ShoppingCart,
   Loader2,
+  Plus,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 
@@ -115,6 +118,16 @@ export function ToolsMarketplace() {
   const [selectedTool, setSelectedTool] = useState<any>(null)
   const { addItem } = useCart()
 
+  const [submitting, setSubmitting] = useState(false)
+  const [newListing, setNewListing] = useState({
+    name: "",
+    category: "",
+    price: "",
+    type: "new",
+    description: "",
+    condition: "New"
+  })
+
   const handleAddToCart = (tool: any) => {
     addItem({
       product_id: String(tool.id),
@@ -144,6 +157,7 @@ export function ToolsMarketplace() {
           setTools(mockToolsData)
           return
         }
+        console.error("Supabase error fetching tools:", error)
         throw error
       }
 
@@ -154,10 +168,35 @@ export function ToolsMarketplace() {
       }
     } catch (err: any) {
       console.error("Error fetching tools:", err.message)
-      toast.error("Failed to load live tools data")
+      toast.error("Live tools data currently unavailable. Showing our catalog.")
       setTools(mockToolsData)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSellSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      setSubmitting(true)
+      const { data: { session } } = await supabase.auth.getSession()
+      const { error } = await supabase
+        .from('tools')
+        .insert([{
+          ...newListing,
+          image: '/placeholder.svg',
+          user_id: session?.user?.id || null,
+        }])
+
+      if (error) throw error
+
+      toast.success("Tool listing submitted successfully!")
+      setNewListing({ name: "", category: "", price: "", type: "new", description: "", condition: "New" })
+      fetchTools()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to list tool")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -249,83 +288,130 @@ export function ToolsMarketplace() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-3">
+          <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-4">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="new">Buy New</TabsTrigger>
             <TabsTrigger value="rental">Rent</TabsTrigger>
+            <TabsTrigger value="sell">Sell My Tools</TabsTrigger>
           </TabsList>
 
-          <div className="grid lg:grid-cols-4 gap-8">
-            {/* Mobile Filter Trigger */}
-            <div className="lg:hidden flex justify-end mb-4 col-span-full">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    Filters & Categories
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader className="mb-6">
-                    <SheetTitle>Filters</SheetTitle>
-                  </SheetHeader>
-                  <div className="overflow-y-auto max-h-[calc(100vh-100px)] pr-2">
-                    <FilterContent />
+          <TabsContent value="sell">
+            <Card className="max-w-3xl mx-auto">
+              <CardHeader>
+                <CardTitle>List Your Tools</CardTitle>
+                <CardDescription>Sell or rent out your farming equipment to other farmers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSellSubmit} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Tool Name *</Label>
+                      <Input value={newListing.name} onChange={e => setNewListing({ ...newListing, name: e.target.value })} required placeholder="e.g., Power Tiller" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Category *</Label>
+                      <Select value={newListing.category} onValueChange={v => setNewListing({ ...newListing, category: v })}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          {categories.filter(c => c.name !== "All Categories").map(c => (
+                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Price (₹) *</Label>
+                      <Input type="number" value={newListing.price} onChange={e => setNewListing({ ...newListing, price: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Listing Type *</Label>
+                      <Select value={newListing.type} onValueChange={v => setNewListing({ ...newListing, type: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">Sell (New/Used)</SelectItem>
+                          <SelectItem value="rental">Rent Out</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </SheetContent>
-              </Sheet>
-            </div>
+                  <div className="space-y-2">
+                    <Label>Description *</Label>
+                    <Textarea value={newListing.description} onChange={e => setNewListing({ ...newListing, description: e.target.value })} required rows={4} />
+                  </div>
+                  <Button type="submit" className="w-full py-6" disabled={submitting}>
+                    {submitting ? <Loader2 className="animate-spin mr-2" /> : <Plus className="mr-2 h-4 w-4" />}
+                    List Tool for Marketplace
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            {/* Desktop Sidebar */}
-            <div className="hidden lg:block lg:col-span-1 space-y-6">
-              <FilterContent />
-            </div>
+          {(activeTab === "all" || activeTab === "new" || activeTab === "rental") && (
+            <div className="grid lg:grid-cols-4 gap-8">
+              <div className="lg:hidden flex justify-end mb-4 col-span-full">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      Filters & Categories
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                    <SheetHeader className="mb-6"><SheetTitle>Filters</SheetTitle></SheetHeader>
+                    <div className="overflow-y-auto max-h-[calc(100vh-100px)] pr-2"><FilterContent /></div>
+                  </SheetContent>
+                </Sheet>
+              </div>
 
-            <div className="lg:col-span-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {sortedTools.map((tool) => {
-                  const Icon = getCategoryIcon(tool.category)
-                  return (
-                    <Card key={tool.id} className="group hover:shadow-lg transition-all">
-                      <div className="relative h-48">
-                        <img src={tool.image || "/placeholder.svg"} alt={tool.name} className="w-full h-full object-cover rounded-t-lg" />
-                        <Badge className="absolute top-2 left-2 truncate max-w-[120px]">
-                          <Icon className="h-3 w-3 mr-1" />
-                          {tool.category}
-                        </Badge>
-                      </div>
-                      <CardContent className="p-4 space-y-3">
-                        <h3 className="font-semibold text-lg line-clamp-1">{tool.name}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{tool.description}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-primary">₹{tool.price}</span>
-                          <Badge variant="outline">{tool.type === 'rental' ? 'Rental' : 'New'}</Badge>
+              <div className="hidden lg:block lg:col-span-1 space-y-6"><FilterContent /></div>
+
+              <div className="lg:col-span-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {sortedTools.map((tool) => {
+                    const Icon = getCategoryIcon(tool.category)
+                    return (
+                      <Card key={tool.id} className="group hover:shadow-lg transition-all">
+                        <div className="relative h-48">
+                          <img src={tool.image || "/placeholder.svg"} alt={tool.name} className="w-full h-full object-cover rounded-t-lg" />
+                          <Badge className="absolute top-2 left-2 truncate max-w-[120px]">
+                            <Icon className="h-3 w-3 mr-1" />
+                            {tool.category || 'Tool'}
+                          </Badge>
                         </div>
-                        <div className="flex gap-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="flex-1 bg-transparent" onClick={() => setSelectedTool(tool)}>Details</Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>{tool.name}</DialogTitle>
-                                <DialogDescription>{tool.vendor}</DialogDescription>
-                              </DialogHeader>
-                              {selectedTool && <ToolDetailsModal tool={selectedTool} />}
-                            </DialogContent>
-                          </Dialog>
-                          <Button size="sm" className="flex-1" onClick={() => handleAddToCart(tool)}>
-                            <ShoppingCart className="h-4 w-4 mr-1" />
-                            {tool.type === 'rental' ? 'Rent Now' : 'Add to Cart'}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                        <CardContent className="p-4 space-y-3">
+                          <h3 className="font-semibold text-lg line-clamp-1">{tool.name}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{tool.description}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-primary">₹{tool.price}</span>
+                            <Badge variant="outline">{tool.type === 'rental' ? 'Rental' : (tool.type || 'New')}</Badge>
+                          </div>
+                          <div className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="flex-1 bg-transparent" onClick={() => setSelectedTool(tool)}>Details</Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>{tool.name}</DialogTitle>
+                                  <DialogDescription>{tool.vendor || 'Local Vendor'}</DialogDescription>
+                                </DialogHeader>
+                                {selectedTool && <ToolDetailsModal tool={selectedTool} />}
+                              </DialogContent>
+                            </Dialog>
+                            <Button size="sm" className="flex-1" onClick={() => handleAddToCart(tool)}>
+                              <ShoppingCart className="h-4 w-4 mr-1" />
+                              {tool.type === 'rental' ? 'Rent Now' : 'Add to Cart'}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </Tabs>
       </div>
     </div>
