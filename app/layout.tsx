@@ -39,6 +39,8 @@ export const metadata: Metadata = {
   generator: "Next.js",
 }
 
+import { FloatingCartButton } from "@/components/floating-cart-button"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -49,6 +51,7 @@ export default function RootLayout({
       <body className="font-sans">
         <CartProvider>
           {children}
+          <FloatingCartButton />
         </CartProvider>
         <Toaster position="top-center" richColors />
       </body>
