@@ -184,6 +184,8 @@ export function ExportHub() {
     e.preventDefault()
     setLoading(true)
 
+    const { data: { session } } = await supabase.auth.getSession()
+
     const cropToInsert = {
       cropname: cropForm.cropname,
       variety: cropForm.variety,
@@ -196,7 +198,8 @@ export function ExportHub() {
       harvestdate: cropForm.harvestdate,
       quality: cropForm.quality,
       organic: cropForm.organic,
-      description: cropForm.description
+      description: cropForm.description,
+      user_id: session?.user?.id || null,
     }
 
     const { error } = await supabase

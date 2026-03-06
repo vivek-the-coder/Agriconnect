@@ -24,7 +24,9 @@ import {
   Settings,
   Zap,
   TrendingUp,
+  ShoppingCart,
 } from "lucide-react"
+import { useCart } from "@/lib/cart-context"
 
 const mockToolsData = [
   {
@@ -103,6 +105,18 @@ export function ToolsMarketplace() {
   const [selectedCategory, setSelectedCategory] = useState("All Categories")
   const [sortBy, setSortBy] = useState("featured")
   const [selectedTool, setSelectedTool] = useState<any>(null)
+  const { addItem } = useCart()
+
+  const handleAddToCart = (tool: any) => {
+    addItem({
+      product_id: String(tool.id),
+      product_type: "tool",
+      product_name: tool.name,
+      product_image: tool.image,
+      price: Number(tool.price),
+    })
+    toast.success(`${tool.name} added to cart!`)
+  }
 
   useEffect(() => {
     fetchTools()
@@ -128,7 +142,7 @@ export function ToolsMarketplace() {
       if (!data || data.length === 0) {
         setTools(mockToolsData)
       } else {
-        setTools(data)
+        setTools([...data, ...mockToolsData])
       }
     } catch (err: any) {
       console.error("Error fetching tools:", err.message)
@@ -264,7 +278,10 @@ export function ToolsMarketplace() {
                               {selectedTool && <ToolDetailsModal tool={selectedTool} />}
                             </DialogContent>
                           </Dialog>
-                          <Button size="sm" className="flex-1">Action</Button>
+                          <Button size="sm" className="flex-1" onClick={() => handleAddToCart(tool)}>
+                            <ShoppingCart className="h-4 w-4 mr-1" />
+                            {tool.type === 'rental' ? 'Rent Now' : 'Add to Cart'}
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

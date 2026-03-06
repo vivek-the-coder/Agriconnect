@@ -25,7 +25,9 @@ import {
   Leaf,
   FlaskConical,
   Loader2,
+  ShoppingCart,
 } from "lucide-react"
+import { useCart } from "@/lib/cart-context"
 
 const seedsData = [
   {
@@ -89,6 +91,18 @@ export function SeedsShop() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All Categories")
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const { addItem } = useCart()
+
+  const handleAddToCart = (product: any) => {
+    addItem({
+      product_id: String(product.id),
+      product_type: "seed",
+      product_name: product.name,
+      product_image: product.image,
+      price: Number(product.price),
+    })
+    toast.success(`${product.name} added to cart!`)
+  }
 
   useEffect(() => {
     fetchSeeds()
@@ -115,7 +129,7 @@ export function SeedsShop() {
       if (!data || data.length === 0) {
         setSeeds(seedsData)
       } else {
-        setSeeds(data)
+        setSeeds([...data, ...seedsData])
       }
     } catch (err: any) {
       console.error("Error fetching seeds:", err.message)
@@ -222,7 +236,10 @@ export function SeedsShop() {
                               {selectedProduct && <ProductDetailsModal product={selectedProduct} />}
                             </DialogContent>
                           </Dialog>
-                          <Button size="sm" className="flex-1">Add to Cart</Button>
+                          <Button size="sm" className="flex-1" onClick={() => handleAddToCart(product)}>
+                            <ShoppingCart className="h-4 w-4 mr-1" />
+                            Add to Cart
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

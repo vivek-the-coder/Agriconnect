@@ -80,6 +80,7 @@ create table if not exists equipment (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   category text, -- Added missing column
+  condition text, -- Added missing column
   description text,
   price text,
   location text,
@@ -192,3 +193,54 @@ begin
     end if;
 end
 $$;
+
+-- 8. Cart Items
+create table if not exists cart_items (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  product_id text not null,
+  product_type text not null check (product_type in ('seed', 'tool', 'equipment')),
+  product_name text not null,
+  product_image text,
+  price numeric not null default 0,
+  quantity int not null default 1,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table cart_items enable row level security;
+do $$
+begin
+    if not exists (select 1 from pg_policies where tablename = 'cart_items' and policyname = 'Users manage own cart') then
+        create policy "Users manage own cart" on cart_items for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+    end if;
+end
+$$;
+
+-- 9. Orders
+create table if not exists orders (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  items jsonb not null,
+  total numeric not null default 0,
+  status text not null default 'Pending' check (status in ('Pending','Confirmed','Shipped','Delivered','Cancelled')),
+  shipping_address text,
+  contact_phone text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table orders enable row level security;
+do $$
+begin
+    if not exists (select 1 from pg_policies where tablename = 'orders' and policyname = 'Users read own orders') then
+        create policy "Users read own orders" on orders for select using (auth.uid() = user_id);
+    end if;
+    if not exists (select 1 from pg_policies where tablename = 'orders' and policyname = 'Users insert own orders') then
+        create policy "Users insert own orders" on orders for insert with check (auth.uid() = user_id);
+    end if;
+end
+$$;
+
+-- 10. Add missing columns to existing tables (Retroactive schema updates)
+alter table equipment add column if not exists category text;
+alter table equipment add column if not exists condition text;
+alter table equipment add column if not exists user_id uuid references auth.users(id);
+alter table export_crops add column if not exists user_id uuid references auth.users(id);

@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { DM_Sans } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
+import { CartProvider } from "@/lib/cart-context"
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -46,9 +47,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} antialiased`} suppressHydrationWarning>
       <body className="font-sans">
-        {children}
+        <CartProvider>
+          {children}
+        </CartProvider>
         <Toaster position="top-center" richColors />
       </body>
     </html>
   )
 }
+

@@ -26,7 +26,9 @@ import {
   Loader2,
   Phone,
   Mail,
+  ShoppingCart,
 } from "lucide-react"
+import { useCart } from "@/lib/cart-context"
 
 const mockUsedEquipmentData = [
   {
@@ -78,6 +80,18 @@ export function UsedEquipmentMarketplace() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All Categories")
   const [selectedItem, setSelectedItem] = useState<any>(null)
+  const { addItem } = useCart()
+
+  const handleAddToCart = (item: any) => {
+    addItem({
+      product_id: String(item.id),
+      product_type: "equipment",
+      product_name: item.name,
+      product_image: item.image,
+      price: Number(item.price) || 0,
+    })
+    toast.success(`${item.name} added to cart!`)
+  }
 
   const [newListing, setNewListing] = useState({
     name: "",
@@ -113,7 +127,7 @@ export function UsedEquipmentMarketplace() {
       if (!data || data.length === 0) {
         setEquipment(mockUsedEquipmentData)
       } else {
-        setEquipment(data)
+        setEquipment([...data, ...mockUsedEquipmentData])
       }
     } catch (err: any) {
       console.error("Error fetching equipment:", err.message)
@@ -128,12 +142,14 @@ export function UsedEquipmentMarketplace() {
     e.preventDefault()
     try {
       setSubmitting(true)
+      const { data: { session } } = await supabase.auth.getSession()
       const { error } = await supabase
         .from('equipment')
         .insert([{
           ...newListing,
           status: 'Available',
-          image: '/placeholder.svg'
+          image: '/placeholder.svg',
+          user_id: session?.user?.id || null,
         }])
 
       if (error) throw error
@@ -237,7 +253,10 @@ export function UsedEquipmentMarketplace() {
                             {selectedItem && <EquipmentDetailsModal equipment={selectedItem} />}
                           </DialogContent>
                         </Dialog>
-                        <Button size="sm" className="flex-1">Contact</Button>
+                        <Button size="sm" className="flex-1" onClick={() => handleAddToCart(item)}>
+                          <ShoppingCart className="h-4 w-4 mr-1" />
+                          Add to Cart
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

@@ -33,18 +33,25 @@ export async function middleware(request: NextRequest) {
     )
 
     const {
-        data: { session },
-    } = await supabase.auth.getSession()
+        data: { user },
+    } = await supabase.auth.getUser()
 
     // Protect admin routes
     if (request.nextUrl.pathname.startsWith('/admin')) {
-        if (!session) {
+        if (!user) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
 
         // Role check
-        if (session.user.email !== 'admin@agro.com') {
+        if (user.email !== 'admin@agro.com') {
             return NextResponse.redirect(new URL('/', request.url))
+        }
+    }
+
+    // Protect dashboard routes (any authenticated user)
+    if (request.nextUrl.pathname.startsWith('/dashboard')) {
+        if (!user) {
+            return NextResponse.redirect(new URL('/login', request.url))
         }
     }
 
@@ -52,5 +59,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/admin/:path*'],
+    matcher: ['/admin/:path*', '/dashboard/:path*'],
 }
