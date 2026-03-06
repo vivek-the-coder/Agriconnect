@@ -7,30 +7,149 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from "lucide-react"
 import { toast } from "sonner"
-import { placeOrder } from "@/lib/checkout-handler"
-import { useState } from "react"
+import { useState, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
+
+// Add a type declaration for the Razorpay window object
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 
 export function CartSheet() {
     const { items, removeItem, updateQuantity, clearCart, itemCount, total, isOpen, setIsOpen } = useCart()
     const [checkingOut, setCheckingOut] = useState(false)
 
+    const router = useRouter()
+
+    const loadRazorpayScript = useCallback(() => {
+        return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = "https://checkout.razorpay.com/v1/checkout.js";
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    }, []);
+
     const handleCheckout = async () => {
         if (items.length === 0) return
         setCheckingOut(true)
-        const { orderId, error } = await placeOrder({ items, total })
-        setCheckingOut(false)
 
-        if (error) {
-            toast.error(error)
-            return
+        try {
+            // 1. Load Razorpay script
+            const res = await loadRazorpayScript();
+            if (!res) {
+                toast.error("Razorpay SDK failed to load. Are you online?");
+                setCheckingOut(false);
+                return;
+            }
+
+            // 2. Create Order on Backend
+            const orderRes = await fetch("/api/create-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount: total }),
+            });
+
+            const orderData = await orderRes.json();
+            if (!orderRes.ok) throw new Error(orderData.error);
+
+            // 3. Initialize Razorpay Checkout
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "AgriConnect",
+                description: "Agricultural Inputs & Equipment",
+                order_id: orderData.id,
+                theme: { color: "#16a34a" },
+                handler: async function (response: any) {
+                    try {
+                        const verifyRes = await fetch("/api/verify-payment", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                items,
+                                total,
+                            }),
+                        });
+
+                        const verifyData = await verifyRes.json();
+                        if (!verifyRes.ok) throw new Error(verifyData.error);
+
+                        clearCart();
+                        setIsOpen(false);
+                        toast.success("Payment successful! Order placed.");
+                        router.push(`/dashboard/invoice/${verifyData.orderId}`);
+                    } catch (error: any) {
+                        toast.error(error.message || "Payment verification failed");
+                    }
+                },
+                modal: {
+                    ondismiss: async function () {
+                        setCheckingOut(false);
+                        try {
+                            const failRes = await fetch("/api/record-failure", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    razorpay_order_id: orderData.id,
+                                    items,
+                                    total,
+                                }),
+                            });
+                            const failData = await failRes.json();
+                            if (failRes.ok && failData.orderId) {
+                                setIsOpen(false);
+                                router.push(`/dashboard/invoice/${failData.orderId}`);
+                            } else {
+                                toast.error("Payment cancelled.");
+                            }
+                        } catch (err) {
+                            console.error("Failed to record dismissal:", err);
+                        }
+                    },
+                },
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on("payment.failed", async function (response: any) {
+                toast.error(`Payment failed: ${response.error.description}`);
+                setCheckingOut(false);
+                try {
+                    const failRes = await fetch("/api/record-failure", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            razorpay_order_id: orderData.id,
+                            items,
+                            total,
+                        }),
+                    });
+                    const failData = await failRes.json();
+                    if (failRes.ok && failData.orderId) {
+                        setIsOpen(false);
+                        router.push(`/dashboard/invoice/${failData.orderId}`);
+                    }
+                } catch (err) {
+                    console.error("Failed to record failure:", err);
+                }
+            });
+            rzp.open();
+        } catch (error: any) {
+            toast.error(error.message || "An error occurred during checkout");
+            setCheckingOut(false);
         }
-
-        clearCart()
-        setIsOpen(false)
-        toast.success("Order placed successfully!", {
-            description: `Order ID: ${orderId?.slice(0, 8)}... — Total: ₹${total.toLocaleString("en-IN")}`,
-        })
     }
 
     return (

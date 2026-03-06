@@ -244,7 +244,7 @@ export function ExportHub() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-3">
             <TabsTrigger value="browse">Browse Crops</TabsTrigger>
             <TabsTrigger value="list">List Your Crop</TabsTrigger>
             <TabsTrigger value="ventures">Joint Ventures</TabsTrigger>

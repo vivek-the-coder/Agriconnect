@@ -188,7 +188,7 @@ export function UsedEquipmentMarketplace() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-2">
             <TabsTrigger value="buy">Browse Equipment</TabsTrigger>
             <TabsTrigger value="sell">Sell My Equipment</TabsTrigger>
           </TabsList>

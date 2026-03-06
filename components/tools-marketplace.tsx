@@ -199,7 +199,7 @@ export function ToolsMarketplace() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-3">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="new">Buy New</TabsTrigger>
             <TabsTrigger value="rental">Rent</TabsTrigger>

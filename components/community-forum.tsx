@@ -297,7 +297,7 @@ export function CommunityForum() {
                       </div>
                       <h3 className="text-lg font-semibold cursor-pointer hover:text-primary">{post.title}</h3>
                       <p className="text-muted-foreground line-clamp-2">{post.content}</p>
-                      <div className="flex items-center justify-between pt-4 border-t">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t gap-4 sm:gap-0">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8"><AvatarFallback><User className="h-4 w-4" /></AvatarFallback></Avatar>
                           <div className="text-sm">
@@ -305,7 +305,7 @@ export function CommunityForum() {
                             <p className="text-muted-foreground text-xs">{post.location}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {post.likes}</span>
                           <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" /> {post.replies}</span>
                           <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {new Date(post.created_at).toLocaleDateString()}</span>

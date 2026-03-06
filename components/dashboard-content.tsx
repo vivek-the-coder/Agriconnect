@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import { useCart } from "@/lib/cart-context"
-import { placeOrder } from "@/lib/checkout-handler"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,8 +28,15 @@ import {
     CheckCircle2,
     Truck,
     XCircle,
+    FileText,
 } from "lucide-react"
 import Image from "next/image"
+
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 
 function getStatusColor(status: string) {
     switch (status?.toLowerCase()) {
@@ -37,6 +45,7 @@ function getStatusColor(status: string) {
         case "shipped": return "bg-purple-100 text-purple-800 border-purple-200"
         case "delivered": return "bg-green-100 text-green-800 border-green-200"
         case "cancelled": return "bg-red-100 text-red-800 border-red-200"
+        case "failed": return "bg-red-100 text-red-800 border-red-200"
         default: return "bg-gray-100 text-gray-800 border-gray-200"
     }
 }
@@ -48,6 +57,7 @@ function getStatusIcon(status: string) {
         case "shipped": return <Truck className="h-3.5 w-3.5" />
         case "delivered": return <CheckCircle2 className="h-3.5 w-3.5" />
         case "cancelled": return <XCircle className="h-3.5 w-3.5" />
+        case "failed": return <XCircle className="h-3.5 w-3.5" />
         default: return <Clock className="h-3.5 w-3.5" />
     }
 }
@@ -111,23 +121,133 @@ export function DashboardContent() {
         }
     }
 
+    const router = useRouter();
+
+    const loadRazorpayScript = useCallback(() => {
+        return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = "https://checkout.razorpay.com/v1/checkout.js";
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    }, []);
+
     const handleCheckout = async () => {
         if (cartItems.length === 0) return
         setCheckingOut(true)
-        const { orderId, error } = await placeOrder({ items: cartItems, total })
-        setCheckingOut(false)
 
-        if (error) {
-            toast.error(error)
-            return
+        try {
+            const res = await loadRazorpayScript();
+            if (!res) {
+                toast.error("Razorpay SDK failed to load. Are you online?");
+                setCheckingOut(false);
+                return;
+            }
+
+            const orderRes = await fetch("/api/create-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount: total }),
+            });
+
+            const orderData = await orderRes.json();
+            if (!orderRes.ok) throw new Error(orderData.error);
+
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "AgriConnect",
+                description: "Agricultural Inputs & Equipment",
+                order_id: orderData.id,
+                theme: { color: "#16a34a" },
+                handler: async function (response: any) {
+                    try {
+                        const verifyRes = await fetch("/api/verify-payment", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                items: cartItems,
+                                total,
+                            }),
+                        });
+
+                        const verifyData = await verifyRes.json();
+                        if (!verifyRes.ok) throw new Error(verifyData.error);
+
+                        clearCart();
+                        toast.success("Payment successful! Order placed.");
+                        router.push(`/dashboard/invoice/${verifyData.orderId}`);
+                    } catch (error: any) {
+                        toast.error(error.message || "Payment verification failed");
+                        // We don't record failure here because the verification failed, but the payment might have been successful.
+                        // Usually signature failure means tampering.
+                    }
+                },
+                modal: {
+                    ondismiss: async function () {
+                        setCheckingOut(false);
+                        try {
+                            const failRes = await fetch("/api/record-failure", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    razorpay_order_id: orderData.id,
+                                    items: cartItems,
+                                    total,
+                                }),
+                            });
+                            const failData = await failRes.json();
+                            if (failRes.ok && failData.orderId) {
+                                router.push(`/dashboard/invoice/${failData.orderId}`);
+                            } else {
+                                fetchData();
+                                toast.error("Payment cancelled.");
+                            }
+                        } catch (err) {
+                            console.error("Failed to record dismissal:", err);
+                        }
+                    },
+                },
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on("payment.failed", async function (response: any) {
+                toast.error(`Payment failed: ${response.error.description}`);
+                setCheckingOut(false);
+                try {
+                    const failRes = await fetch("/api/record-failure", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            razorpay_order_id: orderData.id,
+                            items: cartItems,
+                            total,
+                        }),
+                    });
+                    const failData = await failRes.json();
+                    if (failRes.ok && failData.orderId) {
+                        router.push(`/dashboard/invoice/${failData.orderId}`);
+                    } else {
+                        fetchData();
+                    }
+                } catch (err) {
+                    console.error("Failed to record failure:", err);
+                }
+            });
+            rzp.open();
+        } catch (error: any) {
+            toast.error(error.message || "An error occurred during checkout");
+            setCheckingOut(false);
         }
-
-        clearCart()
-        fetchData()
-        setActiveTab("orders")
-        toast.success("Order placed successfully!", {
-            description: `Order ID: ${orderId?.slice(0, 8)}...`,
-        })
     }
 
     const totalListings = equipmentListings.length + cropListings.length
@@ -202,7 +322,7 @@ export function DashboardContent() {
 
                 {/* Tabs */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-3">
                         <TabsTrigger value="orders" className="gap-2">
                             <ClipboardList className="h-4 w-4 hidden sm:block" />
                             My Orders
@@ -280,9 +400,16 @@ export function DashboardContent() {
                                             ))}
                                         </div>
                                         <Separator />
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-center pb-2">
                                             <span className="text-sm text-muted-foreground">Order Total</span>
                                             <span className="text-lg font-bold text-primary">₹{Number(order.total).toLocaleString("en-IN")}</span>
+                                        </div>
+                                        <div className="pt-2">
+                                            <Link href={`/dashboard/invoice/${order.id}`} target="_blank">
+                                                <Button variant="outline" className="w-full sm:w-auto h-9 text-sm">
+                                                    <FileText className="mr-2 h-4 w-4" /> View Invoice
+                                                </Button>
+                                            </Link>
                                         </div>
                                     </CardContent>
                                 </Card>

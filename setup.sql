@@ -221,7 +221,7 @@ create table if not exists orders (
   user_id uuid not null references auth.users(id) on delete cascade,
   items jsonb not null,
   total numeric not null default 0,
-  status text not null default 'Pending' check (status in ('Pending','Confirmed','Shipped','Delivered','Cancelled')),
+  status text not null default 'Pending' check (status in ('Pending','Confirmed','Shipped','Delivered','Cancelled','Failed')),
   shipping_address text,
   contact_phone text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -244,3 +244,7 @@ alter table equipment add column if not exists category text;
 alter table equipment add column if not exists condition text;
 alter table equipment add column if not exists user_id uuid references auth.users(id);
 alter table export_crops add column if not exists user_id uuid references auth.users(id);
+
+-- 11. Razorpay Payment Tracking (Invoices)
+alter table orders add column if not exists razorpay_order_id text;
+alter table orders add column if not exists razorpay_payment_id text;
