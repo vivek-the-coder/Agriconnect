@@ -152,6 +152,7 @@ create table if not exists forum_posts (
   title text not null,
   content text not null,
   author text not null,
+  author_avatar text,
   location text,
   category text,
   tags text[],
@@ -159,6 +160,7 @@ create table if not exists forum_posts (
   replies int default 0,
   is_resolved boolean default false,
   is_pinned boolean default false,
+  user_id uuid references auth.users(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table forum_posts enable row level security;

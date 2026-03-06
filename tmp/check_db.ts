@@ -15,7 +15,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 async function checkTables() {
-    const tables = ['seeds', 'tools', 'equipment', 'schemes', 'export_crops']
+    const tables = ['seeds', 'tools', 'equipment', 'schemes', 'export_crops', 'forum_posts']
 
     for (const table of tables) {
         console.log(`Checking table: ${table}...`)

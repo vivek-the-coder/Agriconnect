@@ -122,7 +122,8 @@ export function CommunityForum() {
         .order('created_at', { ascending: false })
 
       if (error) {
-        if (error.code === 'PGRST116' || error.message?.includes("schema cache") || error.message?.includes("relation") || error.message?.includes("does not exist")) {
+        // Handle common "table missing" or "schema cache" errors gracefully
+        if (error.code === 'PGRST116' || error.message?.includes("schema cache") || error.message?.includes("relation") || error.message?.includes("does not exist") || error.code === '42P01') {
           console.warn("Table 'forum_posts' not found, falling back to mock data.")
           setPosts(mockForumPosts)
           return
@@ -133,11 +134,15 @@ export function CommunityForum() {
       if (!data || data.length === 0) {
         setPosts(mockForumPosts)
       } else {
-        setPosts(data)
+        // Merge live data with mock data for a richer community feel initially
+        setPosts([...data, ...mockForumPosts])
       }
     } catch (err: any) {
       console.error("Error fetching forum posts:", err.message)
-      toast.error("Failed to load live community data")
+      // Only show error toast if it's not a standard "missing table" scenario
+      if (!err.message?.includes("relation") && !err.message?.includes("does not exist")) {
+        toast.error("Live community data currently unavailable. Showing trending discussions.")
+      }
       setPosts(mockForumPosts)
     } finally {
       setLoading(false)
@@ -148,17 +153,21 @@ export function CommunityForum() {
     e.preventDefault()
     try {
       setSubmitting(true)
+      const { data: { session } } = await supabase.auth.getSession()
+
       const { error } = await supabase
         .from('forum_posts')
         .insert([{
           ...newPost,
           tags: newPost.tags.split(',').map(t => t.trim()).filter(Boolean),
-          author: "Anonymous Farmer",
+          author: session?.user?.email?.split('@')[0] || "Anonymous Farmer",
+          author_avatar: session?.user?.user_metadata?.avatar_url || null,
           location: "Unknown",
           likes: 0,
           replies: 0,
           is_resolved: false,
-          is_pinned: false
+          is_pinned: false,
+          user_id: session?.user?.id || null
         }])
 
       if (error) throw error
@@ -168,7 +177,7 @@ export function CommunityForum() {
       setShowNewPostDialog(false)
       fetchPosts()
     } catch (err: any) {
-      toast.error(err.message || "Failed to create post")
+      toast.error(err.message || "Failed to create post. Please ensure the database tables are set up.")
     } finally {
       setSubmitting(false)
     }
@@ -247,7 +256,7 @@ export function CommunityForum() {
               </DialogContent>
             </Dialog>
 
-            <Card>
+            <Card className="sticky top-24">
               <CardHeader><CardTitle className="text-lg">Categories</CardTitle></CardHeader>
               <CardContent className="space-y-2">
                 {categories.map((c) => (
@@ -286,35 +295,44 @@ export function CommunityForum() {
             </Card>
 
             <div className="space-y-4">
-              {sortedPosts.map((post) => (
-                <Card key={post.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      <div className="flex gap-2 mb-2">
-                        {post.is_pinned && <Badge className="bg-yellow-100 text-yellow-800">Pinned</Badge>}
-                        {post.is_resolved && <Badge className="bg-green-100 text-green-800">Solved</Badge>}
-                        <Badge variant="outline">{post.category}</Badge>
-                      </div>
-                      <h3 className="text-lg font-semibold cursor-pointer hover:text-primary">{post.title}</h3>
-                      <p className="text-muted-foreground line-clamp-2">{post.content}</p>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t gap-4 sm:gap-0">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8"><AvatarFallback><User className="h-4 w-4" /></AvatarFallback></Avatar>
-                          <div className="text-sm">
-                            <p className="font-medium">{post.author}</p>
-                            <p className="text-muted-foreground text-xs">{post.location}</p>
+              {sortedPosts.length > 0 ? (
+                sortedPosts.map((post) => (
+                  <Card key={post.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <div className="flex gap-2 mb-2">
+                          {post.is_pinned && <Badge className="bg-yellow-100 text-yellow-800">Pinned</Badge>}
+                          {post.is_resolved && <Badge className="bg-green-100 text-green-800">Solved</Badge>}
+                          <Badge variant="outline">{post.category}</Badge>
+                        </div>
+                        <h3 className="text-lg font-semibold cursor-pointer hover:text-primary">{post.title}</h3>
+                        <p className="text-muted-foreground line-clamp-2">{post.content}</p>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t gap-4 sm:gap-0">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={post.author_avatar} />
+                              <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                            </Avatar>
+                            <div className="text-sm">
+                              <p className="font-medium">{post.author}</p>
+                              <p className="text-muted-foreground text-xs">{post.location}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {post.likes}</span>
+                            <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" /> {post.replies}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {new Date(post.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {post.likes}</span>
-                          <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" /> {post.replies}</span>
-                          <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {new Date(post.created_at).toLocaleDateString()}</span>
-                        </div>
                       </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card className="p-12 text-center">
+                  <p className="text-muted-foreground">No posts found matching your criteria.</p>
                 </Card>
-              ))}
+              )}
             </div>
           </div>
         </div>
