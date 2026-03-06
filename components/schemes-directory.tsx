@@ -131,22 +131,22 @@ export function SchemesDirectory() {
     <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="relative mb-8">
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="relative mb-6 sm:mb-8 min-h-[200px]">
             <img
               src="/government-schemes-for-farmers-agricultural-suppor.png"
               alt="Government Schemes for Farmers"
-              className="w-full h-64 object-cover rounded-lg shadow-lg"
+              className="w-full h-48 sm:h-64 object-cover rounded-lg shadow-lg"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-lg" />
-            <div className="absolute bottom-6 left-6 text-white">
-              <h1 className="text-4xl font-bold mb-2">Government Schemes</h1>
-              <p className="text-xl opacity-90">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent rounded-lg" />
+            <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 text-white text-left">
+              <h1 className="text-xl sm:text-4xl font-bold mb-1 sm:mb-2">Government Schemes</h1>
+              <p className="text-sm sm:text-xl opacity-90 max-w-xl">
                 Supporting farmers with financial assistance and development programs
               </p>
             </div>
           </div>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto px-2">
             Discover and apply for government schemes designed to support farmers and boost agricultural development
           </p>
         </div>
@@ -158,14 +158,14 @@ export function SchemesDirectory() {
             <h2 className="text-lg font-semibold text-foreground">Filter Schemes</h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search schemes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10"
               />
             </div>
 
@@ -214,8 +214,8 @@ export function SchemesDirectory() {
                     }`}
                   onClick={() => setSelectedScheme(scheme)}
                 >
-                  <div className="flex">
-                    <div className="w-32 h-32 flex-shrink-0">
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="w-full sm:w-32 h-40 sm:h-32 flex-shrink-0">
                       <img
                         src={scheme.image || "/placeholder.svg"}
                         alt={scheme.name}
@@ -223,36 +223,36 @@ export function SchemesDirectory() {
                       />
                     </div>
                     <div className="flex-1">
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
+                      <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
                           <div className="space-y-2">
-                            <CardTitle className="text-xl">{scheme.name}</CardTitle>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary">{scheme.type}</Badge>
-                              <Badge variant="outline">{scheme.state}</Badge>
-                              <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                            <CardTitle className="text-lg sm:text-xl line-clamp-1 sm:line-clamp-none">{scheme.name}</CardTitle>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant="secondary" className="text-[10px] sm:text-xs">{scheme.type}</Badge>
+                              <Badge variant="outline" className="text-[10px] sm:text-xs">{scheme.state}</Badge>
+                              <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100 text-[10px] sm:text-xs">
                                 {scheme.status}
                               </Badge>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="flex items-center text-primary font-semibold">
-                              <DollarSign className="h-4 w-4 mr-1" />
+                          <div className="sm:text-right">
+                            <div className="flex items-center text-primary font-semibold text-sm sm:text-base">
+                              <DollarSign className="h-4 w-4 mr-1 shrink-0" />
                               {scheme.amount}
                             </div>
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <CardDescription className="text-base mb-4">{scheme.description}</CardDescription>
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <div className="flex items-center">
-                            <Users className="h-4 w-4 mr-1" />
-                            {scheme.eligibility}
+                      <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                        <CardDescription className="text-sm sm:text-base mb-4 line-clamp-2 sm:line-clamp-none">{scheme.description}</CardDescription>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm text-muted-foreground border-t pt-3">
+                          <div className="flex items-center gap-1.5">
+                            <Users className="h-3.5 w-3.5" />
+                            <span className="truncate">{scheme.eligibility}</span>
                           </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Deadline: {scheme.deadline}
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span>Deadline: {scheme.deadline}</span>
                           </div>
                         </div>
                       </CardContent>

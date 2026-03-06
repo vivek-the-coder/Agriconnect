@@ -14,7 +14,7 @@ const testimonials = [
     role: "Organic Farmer, Maharashtra",
   },
   {
-    quote: "As an exporter, AgriConnect gives me direct access to quality produce from verified farmers.",
+    quote: "The organic fertilizers from AgriConnect transformed my vegetable farm. I've seen a 30% increase in yield within just one season.",
     author: "Ahmed Hassan",
     role: "Agricultural Exporter, Delhi",
   },
@@ -31,7 +31,7 @@ export function Testimonials() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {testimonials.map((testimonial, index) => (
             <Card key={index} className="relative">
               <CardContent className="p-8">

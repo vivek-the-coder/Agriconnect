@@ -20,6 +20,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import {
   Search,
   Filter,
   MapPin,
@@ -173,8 +180,38 @@ export function UsedEquipmentMarketplace() {
     return matchesSearch && matchesCategory
   })
 
+  const FilterContent = () => (
+    <Card>
+      <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Filter className="h-5 w-5" /> Filters</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label>Search</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All Categories">All Categories</SelectItem>
+              <SelectItem value="Tractors">Tractors</SelectItem>
+              <SelectItem value="Harvesting">Harvesting</SelectItem>
+              <SelectItem value="Tillage">Tillage</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
   if (loading) {
-    return <div className="py-20 text-center">Loading marketplace...</div>
+    return <div className="py-20 text-center flex flex-col items-center gap-4">
+      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <p className="text-muted-foreground">Loading marketplace...</p>
+    </div>
   }
 
   return (
@@ -194,35 +231,31 @@ export function UsedEquipmentMarketplace() {
           </TabsList>
 
           <TabsContent value="buy" className="space-y-6">
+            <div className="lg:hidden flex justify-end mb-4">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filters & Categories
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader className="mb-6">
+                    <SheetTitle>Filters</SheetTitle>
+                  </SheetHeader>
+                  <div className="overflow-y-auto max-h-[calc(100vh-100px)] pr-2">
+                    <FilterContent />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
             <div className="grid lg:grid-cols-4 gap-8">
-              <div className="lg:col-span-1 space-y-6">
-                <Card>
-                  <CardHeader><CardTitle className="flex items-center gap-2"><Filter className="h-5 w-5" /> Filters</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Search</Label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Category</Label>
-                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="All Categories">All Categories</SelectItem>
-                          <SelectItem value="Tractors">Tractors</SelectItem>
-                          <SelectItem value="Harvesting">Harvesting</SelectItem>
-                          <SelectItem value="Tillage">Tillage</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="hidden lg:block lg:col-span-1 space-y-6">
+                <FilterContent />
               </div>
 
-              <div className="lg:col-span-3 grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredEquipment.map((item) => (
                   <Card key={item.id} className="group hover:shadow-lg transition-all">
                     <div className="relative h-48">

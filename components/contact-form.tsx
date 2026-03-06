@@ -178,6 +178,7 @@ export default function ContactForm() {
                 </div>
                 <div>
                   <h3 className="font-semibold">Visit Us</h3>
+                  <p className="text-muted-foreground">We&apos;re here to help you grow. Reach out for any agricultural queries.</p>
                   <p className="text-muted-foreground">
                     AgriConnect Headquarters
                     <br />

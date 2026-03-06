@@ -236,18 +236,18 @@ export function ExportHub() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">Export Hub</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <h1 className="text-2xl sm:text-4xl font-bold text-foreground mb-4">Export Hub</h1>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
             Connect farmers with global exporters. List your crops, find export opportunities, and explore joint
             ventures.
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-3">
-            <TabsTrigger value="browse">Browse Crops</TabsTrigger>
-            <TabsTrigger value="list">List Your Crop</TabsTrigger>
-            <TabsTrigger value="ventures">Joint Ventures</TabsTrigger>
+          <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-3 bg-muted/50 p-1">
+            <TabsTrigger value="browse" className="flex-1 sm:flex-none py-2 whitespace-nowrap">Browse Crops</TabsTrigger>
+            <TabsTrigger value="list" className="flex-1 sm:flex-none py-2 whitespace-nowrap">List Your Crop</TabsTrigger>
+            <TabsTrigger value="ventures" className="flex-1 sm:flex-none py-2 whitespace-nowrap">Joint Ventures</TabsTrigger>
           </TabsList>
 
           {/* Browse Crops Tab */}
@@ -261,14 +261,14 @@ export function ExportHub() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search crops, varieties, farmers..."
+                      placeholder="Search crops..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 h-10"
                     />
                   </div>
 
@@ -306,12 +306,12 @@ export function ExportHub() {
               {filteredCrops.map((crop) => (
                 <Card key={crop.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div>
                         <CardTitle className="text-xl">{crop.cropname || crop.cropName}</CardTitle>
                         <CardDescription className="text-base">{crop.variety}</CardDescription>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {crop.organic && (
                           <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Organic</Badge>
                         )}
@@ -342,26 +342,28 @@ export function ExportHub() {
                     </div>
 
                     <div className="border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-2">
                           <p className="font-medium">{crop.farmer}</p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {crop.contact}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <Phone className="h-3.5 w-3.5" />
+                              <span className="truncate max-w-[200px]">{crop.contact}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {crop.email}
+                            <div className="flex items-center gap-1.5">
+                              <Mail className="h-3.5 w-3.5" />
+                              <span className="truncate max-w-[200px]">{crop.email}</span>
                             </div>
                           </div>
                         </div>
-                        <Button onClick={() => {
-                          const subject = encodeURIComponent(`Inquiry for ${crop.cropname || crop.cropName}`)
-                          const body = encodeURIComponent(`Hello ${crop.farmer},\n\nI am interested in your ${crop.variety} ${crop.cropname || crop.cropName} listed on AgriConnect.\n\nRegards,`)
-                          window.location.href = `mailto:${crop.email || ''}?subject=${subject}&body=${body}`
-                          toast.success("Opening email client...")
-                        }}>Contact Farmer</Button>
+                        <Button
+                          className="w-full sm:w-auto"
+                          onClick={() => {
+                            const subject = encodeURIComponent(`Inquiry for ${crop.cropname || crop.cropName}`)
+                            const body = encodeURIComponent(`Hello ${crop.farmer},\n\nI am interested in your ${crop.variety} ${crop.cropname || crop.cropName} listed on AgriConnect.\n\nRegards,`)
+                            window.location.href = `mailto:${crop.email || ''}?subject=${subject}&body=${body}`
+                            toast.success("Opening email client...")
+                          }}>Contact Farmer</Button>
                       </div>
                     </div>
                   </CardContent>
@@ -384,7 +386,7 @@ export function ExportHub() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmitCrop} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="cropName">Crop Name *</Label>
                       <Select

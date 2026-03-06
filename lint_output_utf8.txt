@@ -1,0 +1,389 @@
+﻿node.exe : `next lint` is deprecated and will be 
+removed in Next.js 16.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (`next l 
+   int` is ... in Next.js 16.:String) [], RemoteExc  
+  eption
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+For new projects, use create-next-app to choose your 
+preferred linter.
+For existing projects, migrate to the ESLint CLI:
+npx @next/codemod@canary next-lint-to-eslint-cli .
+
+ ΓÜá Warning: Next.js inferred your workspace root, 
+but it may not be correct.
+ We detected multiple lockfiles and selected the 
+directory of C:\Users\HP\package-lock.json as the 
+root directory.
+ To silence this warning, set 
+`outputFileTracingRoot` in your Next.js config, or 
+consider removing one of the lockfiles if it's not 
+needed.
+   See https://nextjs.org/docs/app/api-reference/conf
+ig/next-config-js/output#caveats for more 
+information.
+ Detected additional lockfiles: 
+   * C:\Users\HP\Documents\agriculture-web\AgriConnec
+t-main\package-lock.json
+
+
+./app/admin/page.tsx
+6:10  Warning: 'Card' is defined but never used.  
+@typescript-eslint/no-unused-vars
+6:16  Warning: 'CardContent' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+6:29  Warning: 'CardHeader' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+6:41  Warning: 'CardTitle' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+6:52  Warning: 'CardDescription' is defined but 
+never used.  @typescript-eslint/no-unused-vars
+10:10  Warning: 'Tabs' is defined but never used.  
+@typescript-eslint/no-unused-vars
+10:16  Warning: 'TabsContent' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+10:29  Warning: 'TabsList' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+10:39  Warning: 'TabsTrigger' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+12:5  Warning: 'BarChart3' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+14:5  Warning: 'Package' is defined but never used.  
+@typescript-eslint/no-unused-vars
+17:5  Warning: 'ShoppingBag' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+23:5  Warning: 'Plus' is defined but never used.  
+@typescript-eslint/no-unused-vars
+24:5  Warning: 'Search' is defined but never used.  
+@typescript-eslint/no-unused-vars
+34:12  Warning: 'user' is assigned a value but never 
+used.  @typescript-eslint/no-unused-vars
+34:38  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+57:8  Warning: React Hook useEffect has a missing 
+dependency: 'router'. Either include it or remove 
+the dependency array.  react-hooks/exhaustive-deps
+109:64  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+151:50  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+164:40  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+167:52  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+168:46  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+189:38  Warning: React Hook useEffect has a missing 
+dependency: 'fetchData'. Either include it or remove 
+the dependency array.  react-hooks/exhaustive-deps
+
+./app/api/create-order/route.ts
+29:21  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./app/api/record-failure/route.ts
+63:21  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./app/api/verify-payment/route.ts
+5:35  Warning: 'CookieOptions' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+84:21  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./app/dashboard/invoice/[id]/page.tsx
+4:8  Warning: 'Image' is defined but never used.  
+@typescript-eslint/no-unused-vars
+134:55  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./app/forgot-password/page.tsx
+34:18  Warning: 'error' is defined but never used.  
+@typescript-eslint/no-unused-vars
+
+./app/login/page.tsx
+38:18  Warning: 'error' is defined but never used.  
+@typescript-eslint/no-unused-vars
+
+./app/reset-password/page.tsx
+4:8  Warning: 'Link' is defined but never used.  
+@typescript-eslint/no-unused-vars
+9:46  Warning: 'CardFooter' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+42:18  Warning: 'error' is defined but never used.  
+@typescript-eslint/no-unused-vars
+
+./app/signup/page.tsx
+44:18  Warning: 'error' is defined but never used.  
+@typescript-eslint/no-unused-vars
+
+./components/cart-sheet.tsx
+10:33  Warning: 'useEffect' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+17:19  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+73:52  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+94:37  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+126:64  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+153:25  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./components/community-forum.tsx
+6:52  Warning: 'CardDescription' is defined but 
+never used.  @typescript-eslint/no-unused-vars
+13:34  Warning: 'AvatarImage' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+17:3  Warning: 'DialogDescription' is defined but 
+never used.  @typescript-eslint/no-unused-vars
+96:38  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+138:19  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+170:19  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./components/contact-form.tsx
+35:21  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+56:47  Error: `'` can be escaped with `&apos;`, 
+`&lsquo;`, `&#39;`, `&rsquo;`.  
+react/no-unescaped-entities
+69:60  Error: `'` can be escaped with `&apos;`, 
+`&lsquo;`, `&#39;`, `&rsquo;`.  
+react/no-unescaped-entities
+
+./components/dashboard-content.tsx
+26:5  Warning: 'TrendingUp' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+38:19  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+70:42  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+71:64  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+72:54  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+90:8  Warning: React Hook useEffect has a missing 
+dependency: 'fetchData'. Either include it or remove 
+the dependency array.  react-hooks/exhaustive-deps
+170:52  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+190:37  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+224:64  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+248:25  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+384:77  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+453:57  Warning: Using `<img>` could result in 
+slower LCP and higher bandwidth. Consider using 
+`<Image />` from `next/image` or a custom image 
+loader to automatically optimize images. This may 
+incur additional usage or cost from your provider. 
+See: https://nextjs.org/docs/messages/no-img-element 
+ @next/next/no-img-element
+
+./components/export-hub.tsx
+138:50  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./components/features-grid.tsx
+70:19  Warning: Using `<img>` could result in slower 
+LCP and higher bandwidth. Consider using `<Image />` 
+from `next/image` or a custom image loader to 
+automatically optimize images. This may incur 
+additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  
+@next/next/no-img-element
+
+./components/navigation.tsx
+6:41  Warning: 'Settings' is defined but never used. 
+ @typescript-eslint/no-unused-vars
+6:51  Warning: 'LayoutDashboard' is defined but 
+never used.  @typescript-eslint/no-unused-vars
+24:36  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./components/schemes-directory.tsx
+104:48  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+105:56  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+136:13  Warning: Using `<img>` could result in 
+slower LCP and higher bandwidth. Consider using 
+`<Image />` from `next/image` or a custom image 
+loader to automatically optimize images. This may 
+incur additional usage or cost from your provider. 
+See: https://nextjs.org/docs/messages/no-img-element 
+ @next/next/no-img-element
+219:23  Warning: Using `<img>` could result in 
+slower LCP and higher bandwidth. Consider using 
+`<Image />` from `next/image` or a custom image 
+loader to automatically optimize images. This may 
+incur additional usage or cost from your provider. 
+See: https://nextjs.org/docs/messages/no-img-element 
+ @next/next/no-img-element
+272:21  Warning: Using `<img>` could result in 
+slower LCP and higher bandwidth. Consider using 
+`<Image />` from `next/image` or a custom image 
+loader to automatically optimize images. This may 
+incur additional usage or cost from your provider. 
+See: https://nextjs.org/docs/messages/no-img-element 
+ @next/next/no-img-element
+
+./components/seeds-shop.tsx
+6:52  Warning: 'CardDescription' is defined but 
+never used.  @typescript-eslint/no-unused-vars
+10:10  Warning: 'Select' is defined but never used.  
+@typescript-eslint/no-unused-vars
+10:18  Warning: 'SelectContent' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+10:33  Warning: 'SelectItem' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+10:45  Warning: 'SelectTrigger' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+10:60  Warning: 'SelectValue' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+12:29  Warning: 'TabsList' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+12:39  Warning: 'TabsTrigger' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+97:38  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+101:58  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+104:37  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+142:19  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+245:25  Warning: Using `<img>` could result in 
+slower LCP and higher bandwidth. Consider using 
+`<Image />` from `next/image` or a custom image 
+loader to automatically optimize images. This may 
+incur additional usage or cost from your provider. 
+See: https://nextjs.org/docs/messages/no-img-element 
+ @next/next/no-img-element
+293:54  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+296:7  Warning: Using `<img>` could result in slower 
+LCP and higher bandwidth. Consider using `<Image />` 
+from `next/image` or a custom image loader to 
+automatically optimize images. This may incur 
+additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  
+@next/next/no-img-element
+302:81  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./components/testimonials.tsx
+39:84  Error: `"` can be escaped with `&quot;`, 
+`&ldquo;`, `&#34;`, `&rdquo;`.  
+react/no-unescaped-entities
+39:104  Error: `"` can be escaped with `&quot;`, 
+`&ldquo;`, `&#34;`, `&rdquo;`.  
+react/no-unescaped-entities
+
+./components/tools-marketplace.tsx
+6:52  Warning: 'CardDescription' is defined but 
+never used.  @typescript-eslint/no-unused-vars
+11:16  Warning: 'TabsContent' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+109:38  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+114:18  Warning: 'setSortBy' is assigned a value but 
+never used.  @typescript-eslint/no-unused-vars
+115:52  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+118:34  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+155:19  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+291:25  Warning: Using `<img>` could result in 
+slower LCP and higher bandwidth. Consider using 
+`<Image />` from `next/image` or a custom image 
+loader to automatically optimize images. This may 
+incur additional usage or cost from your provider. 
+See: https://nextjs.org/docs/messages/no-img-element 
+ @next/next/no-img-element
+335:45  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+338:7  Warning: Using `<img>` could result in slower 
+LCP and higher bandwidth. Consider using `<Image />` 
+from `next/image` or a custom image loader to 
+automatically optimize images. This may incur 
+additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  
+@next/next/no-img-element
+
+./components/ui/textarea.tsx
+5:18  Error: An interface declaring no members is 
+equivalent to its supertype.  
+@typescript-eslint/no-empty-object-type
+
+./components/ui/use-toast.ts
+21:7  Warning: 'actionTypes' is assigned a value but 
+only used as a type.  
+@typescript-eslint/no-unused-vars
+
+./components/used-equipment-marketplace.tsx
+83:46  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+89:52  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+92:34  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+139:19  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+168:19  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+262:23  Warning: Using `<img>` could result in 
+slower LCP and higher bandwidth. Consider using 
+`<Image />` from `next/image` or a custom image 
+loader to automatically optimize images. This may 
+incur additional usage or cost from your provider. 
+See: https://nextjs.org/docs/messages/no-img-element 
+ @next/next/no-img-element
+355:60  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+358:7  Warning: Using `<img>` could result in slower 
+LCP and higher bandwidth. Consider using `<Image />` 
+from `next/image` or a custom image loader to 
+automatically optimize images. This may incur 
+additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  
+@next/next/no-img-element
+
+./components/why-agriconnect.tsx
+31:15  Error: `'` can be escaped with `&apos;`, 
+`&lsquo;`, `&#39;`, `&rsquo;`.  
+react/no-unescaped-entities
+41:19  Warning: Using `<img>` could result in slower 
+LCP and higher bandwidth. Consider using `<Image />` 
+from `next/image` or a custom image loader to 
+automatically optimize images. This may incur 
+additional usage or cost from your provider. See: 
+https://nextjs.org/docs/messages/no-img-element  
+@next/next/no-img-element
+
+./lib/cart-context.tsx
+76:46  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+103:58  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+./lib/checkout-handler.ts
+12:22  Error: Unexpected any. Specify a different 
+type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn 
+more here: https://nextjs.org/docs/app/api-reference/
+config/eslint#disabling-rules

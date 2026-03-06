@@ -7,15 +7,42 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from "lucide-react"
 import { toast } from "sonner"
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 
 // Add a type declaration for the Razorpay window object
 declare global {
     interface Window {
-        Razorpay: any;
+        Razorpay: {
+            new(options: RazorpayOptions): RazorpayInstance;
+        };
     }
+}
+
+interface RazorpayOptions {
+    key: string | undefined;
+    amount: number;
+    currency: string;
+    name: string;
+    description: string;
+    order_id: string;
+    theme: { color: string };
+    handler: (response: RazorpayResponse) => Promise<void>;
+    modal: {
+        ondismiss: () => Promise<void>;
+    };
+}
+
+interface RazorpayResponse {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+}
+
+interface RazorpayInstance {
+    open: () => void;
+    on: (event: string, handler: (response: { error: { description: string } }) => void) => void;
 }
 
 export function CartSheet() {
@@ -62,7 +89,7 @@ export function CartSheet() {
             if (!orderRes.ok) throw new Error(orderData.error);
 
             // 3. Initialize Razorpay Checkout
-            const options = {
+            const options: RazorpayOptions = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                 amount: orderData.amount,
                 currency: orderData.currency,
@@ -70,7 +97,7 @@ export function CartSheet() {
                 description: "Agricultural Inputs & Equipment",
                 order_id: orderData.id,
                 theme: { color: "#16a34a" },
-                handler: async function (response: any) {
+                handler: async function (response: RazorpayResponse) {
                     try {
                         const verifyRes = await fetch("/api/verify-payment", {
                             method: "POST",
@@ -91,8 +118,9 @@ export function CartSheet() {
                         setIsOpen(false);
                         toast.success("Payment successful! Order placed.");
                         router.push(`/dashboard/invoice/${verifyData.orderId}`);
-                    } catch (error: any) {
-                        toast.error(error.message || "Payment verification failed");
+                    } catch (error: unknown) {
+                        const message = error instanceof Error ? error.message : "Payment verification failed";
+                        toast.error(message);
                     }
                 },
                 modal: {
@@ -123,7 +151,7 @@ export function CartSheet() {
             };
 
             const rzp = new window.Razorpay(options);
-            rzp.on("payment.failed", async function (response: any) {
+            rzp.on("payment.failed", async function (response: { error: { description: string } }) {
                 toast.error(`Payment failed: ${response.error.description}`);
                 setCheckingOut(false);
                 try {
@@ -146,9 +174,13 @@ export function CartSheet() {
                 }
             });
             setIsOpen(false);
-            rzp.open();
-        } catch (error: any) {
-            toast.error(error.message || "An error occurred during checkout");
+            // Delay opening Razorpay to ensure Sheet overlay is fully removed
+            setTimeout(() => {
+                rzp.open();
+            }, 100);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "An error occurred during checkout";
+            toast.error(message);
             setCheckingOut(false);
         }
     }
@@ -165,8 +197,8 @@ export function CartSheet() {
                     )}
                 </Button>
             </SheetTrigger>
-            <SheetContent className="flex flex-col w-full sm:max-w-md">
-                <SheetHeader>
+            <SheetContent className="flex flex-col h-[100dvh] w-full sm:max-w-md p-0 gap-0 overflow-hidden bg-background">
+                <SheetHeader className="p-6 pb-2 shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
                     <SheetTitle className="flex items-center gap-2">
                         <ShoppingBag className="h-5 w-5 text-primary" />
                         Your Cart
@@ -176,128 +208,135 @@ export function CartSheet() {
                     </SheetTitle>
                 </SheetHeader>
 
-                {items.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-                        <div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                            <ShoppingCart className="h-10 w-10 text-muted-foreground/50" />
+                <div className="flex-1 flex flex-col min-h-0 relative">
+                    {items.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+                            <div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                                <ShoppingCart className="h-10 w-10 text-muted-foreground/50" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-foreground mb-1">Your cart is empty</h3>
+                            <p className="text-sm text-muted-foreground mb-6">
+                                Browse our seeds, tools, and equipment to add items to your cart.
+                            </p>
+                            <Button variant="outline" onClick={() => setIsOpen(false)}>
+                                Continue Shopping
+                            </Button>
                         </div>
-                        <h3 className="text-lg font-semibold text-foreground mb-1">Your cart is empty</h3>
-                        <p className="text-sm text-muted-foreground mb-6">
-                            Browse our seeds, tools, and equipment to add items to your cart.
-                        </p>
-                        <Button variant="outline" onClick={() => setIsOpen(false)}>
-                            Continue Shopping
-                        </Button>
-                    </div>
-                ) : (
-                    <>
-                        <ScrollArea className="flex-1 -mx-6 px-6">
-                            <div className="space-y-4 py-4">
+                    ) : (
+                        <div className="flex flex-col h-full overflow-hidden">
+                            {/* Scrollable Container with Native Scroll */}
+                            <div className="flex-1 w-full overflow-y-auto overscroll-contain px-6 py-4 space-y-4">
                                 {items.map((item) => (
-                                    <div key={item.id} className="flex gap-3 p-3 rounded-xl bg-muted/30 border border-border/40 hover:border-border/80 transition-colors">
-                                        {/* Image */}
-                                        <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                                    <div key={item.id} className="flex gap-4 p-3 rounded-xl bg-muted/30 border border-border/40 hover:border-border/80 transition-all group">
+                                        {/* Image Container */}
+                                        <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0 relative">
                                             {item.product_image ? (
                                                 <Image
                                                     src={item.product_image}
                                                     alt={item.product_name}
-                                                    width={64}
-                                                    height={64}
-                                                    className="w-full h-full object-cover"
+                                                    fill
+                                                    sizes="64px"
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center">
-                                                    <ShoppingBag className="h-6 w-6 text-muted-foreground/40" />
+                                                    <ShoppingBag className="h-6 w-6 text-muted-foreground/30" />
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Details */}
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-sm font-medium text-foreground truncate">{item.product_name}</h4>
-                                            <p className="text-xs text-muted-foreground capitalize">{item.product_type}</p>
-                                            <p className="text-sm font-semibold text-primary mt-1">₹{item.price.toLocaleString("en-IN")}</p>
-                                        </div>
+                                        {/* Content Area */}
+                                        <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <div className="min-w-0">
+                                                    <h4 className="text-sm font-semibold text-foreground truncate">{item.product_name}</h4>
+                                                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">{item.product_type}</p>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 -mr-1 -mt-1 text-muted-foreground hover:text-destructive shrink-0"
+                                                    onClick={() => removeItem(item.id)}
+                                                    aria-label="Remove item"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
 
-                                        {/* Quantity + Remove */}
-                                        <div className="flex flex-col items-end justify-between">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                                onClick={() => removeItem(item.id)}
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                            <div className="flex items-center gap-1 bg-background rounded-lg border border-border/60 px-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6"
-                                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                    disabled={item.quantity <= 1}
-                                                >
-                                                    <Minus className="h-3 w-3" />
-                                                </Button>
-                                                <span className="text-xs font-semibold w-5 text-center">{item.quantity}</span>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6"
-                                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                >
-                                                    <Plus className="h-3 w-3" />
-                                                </Button>
+                                            <div className="flex items-center justify-between mt-2">
+                                                <p className="text-sm font-bold text-primary">₹{item.price.toLocaleString("en-IN")}</p>
+                                                <div className="flex items-center gap-1 bg-background rounded-lg border border-border/60 p-0.5">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6"
+                                                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                        disabled={item.quantity <= 1}
+                                                        aria-label="Decrease quantity"
+                                                    >
+                                                        <Minus className="h-2.5 w-2.5" />
+                                                    </Button>
+                                                    <span className="text-xs font-bold w-5 text-center">{item.quantity}</span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6"
+                                                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                        aria-label="Increase quantity"
+                                                    >
+                                                        <Plus className="h-2.5 w-2.5" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </ScrollArea>
 
-                        <div className="pt-4 space-y-4">
-                            <Separator />
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Subtotal</span>
-                                    <span className="font-medium">₹{total.toLocaleString("en-IN")}</span>
+                            {/* Sticky Footer */}
+                            <div className="p-6 space-y-4 bg-background border-t shrink-0 shadow-[0_-8px_16px_-8px_rgba(0,0,0,0.05)]">
+                                <div className="space-y-1.5">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Subtotal</span>
+                                        <span className="font-medium">₹{total.toLocaleString("en-IN")}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Delivery</span>
+                                        <span className="font-medium text-green-600">Free</span>
+                                    </div>
+                                    <Separator className="my-2" />
+                                    <div className="flex justify-between text-base font-bold">
+                                        <span>Total</span>
+                                        <span className="text-primary">₹{total.toLocaleString("en-IN")}</span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Delivery</span>
-                                    <span className="font-medium text-green-600">Free</span>
-                                </div>
-                                <Separator />
-                                <div className="flex justify-between text-base font-bold">
-                                    <span>Total</span>
-                                    <span className="text-primary">₹{total.toLocaleString("en-IN")}</span>
-                                </div>
+
+                                <SheetFooter className="flex-col gap-2 sm:flex-col pb-2">
+                                    <Button
+                                        className="w-full font-semibold shadow-md h-12"
+                                        size="lg"
+                                        onClick={handleCheckout}
+                                        disabled={checkingOut}
+                                    >
+                                        {checkingOut ? "Placing Order..." : "Place Order"}
+                                        {!checkingOut && <ArrowRight className="h-4 w-4 ml-2" />}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full text-muted-foreground hover:text-destructive py-1 h-8"
+                                        onClick={() => {
+                                            clearCart()
+                                            toast.info("Cart cleared")
+                                        }}
+                                    >
+                                        Clear Cart
+                                    </Button>
+                                </SheetFooter>
                             </div>
-
-                            <SheetFooter className="flex-col gap-2 sm:flex-col">
-                                <Button
-                                    className="w-full font-semibold shadow-md"
-                                    size="lg"
-                                    onClick={handleCheckout}
-                                    disabled={checkingOut}
-                                >
-                                    {checkingOut ? "Placing Order..." : "Place Order"}
-                                    {!checkingOut && <ArrowRight className="h-4 w-4 ml-2" />}
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full text-muted-foreground hover:text-destructive"
-                                    onClick={() => {
-                                        clearCart()
-                                        toast.info("Cart cleared")
-                                    }}
-                                >
-                                    Clear Cart
-                                </Button>
-                            </SheetFooter>
                         </div>
-                    </>
-                )}
+                    )}
+                </div>
             </SheetContent>
         </Sheet>
     )

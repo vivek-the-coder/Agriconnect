@@ -19,6 +19,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import {
   Search,
   Tag,
   Sprout,
@@ -26,6 +33,7 @@ import {
   FlaskConical,
   Loader2,
   ShoppingCart,
+  Filter,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 
@@ -148,6 +156,41 @@ export function SeedsShop() {
     return matchesSearch && matchesCategory
   })
 
+  const FilterContent = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Filters</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Search</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search seeds..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Categories</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          {categories.map((c) => (
+            <button
+              key={c.name}
+              onClick={() => setSelectedCategory(c.name)}
+              className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${selectedCategory === c.name ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            >
+              <div className="flex items-center gap-3">
+                <c.icon className="h-4 w-4" />
+                <span className="text-sm font-medium">{c.name}</span>
+              </div>
+            </button>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  )
+
   if (loading) {
     return <div className="py-20 text-center flex flex-col items-center gap-4">
       <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -167,42 +210,35 @@ export function SeedsShop() {
 
         <Tabs defaultValue="all" className="space-y-8">
           <TabsContent value="all" className="space-y-6">
-            <div className="grid lg:grid-cols-4 gap-8">
-              <div className="lg:col-span-1 space-y-6">
-                <Card>
-                  <CardHeader><CardTitle className="text-lg">Filters</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Search</Label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search seeds..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Mobile Filter Trigger */}
+            <div className="lg:hidden flex justify-end mb-4">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filters & Categories
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader className="mb-6">
+                    <SheetTitle>Filters</SheetTitle>
+                  </SheetHeader>
+                  <div className="overflow-y-auto max-h-[calc(100vh-100px)] pr-2">
+                    <FilterContent />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
 
-                <Card>
-                  <CardHeader><CardTitle className="text-lg">Categories</CardTitle></CardHeader>
-                  <CardContent className="space-y-2">
-                    {categories.map((c) => (
-                      <button
-                        key={c.name}
-                        onClick={() => setSelectedCategory(c.name)}
-                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${selectedCategory === c.name ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <c.icon className="h-4 w-4" />
-                          <span className="text-sm font-medium">{c.name}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </CardContent>
-                </Card>
+            <div className="grid lg:grid-cols-4 gap-8">
+              {/* Desktop Sidebar */}
+              <div className="hidden lg:block lg:col-span-1 space-y-6">
+                <FilterContent />
               </div>
 
+              {/* Product Grid */}
               <div className="lg:col-span-3">
-                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredProducts.map((product) => (
                     <Card key={product.id} className="group hover:shadow-xl transition-all duration-300">
                       <div className="relative h-48">

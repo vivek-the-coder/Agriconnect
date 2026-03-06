@@ -29,6 +29,7 @@ import {
     Truck,
     XCircle,
     FileText,
+    MapPin,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -262,12 +263,12 @@ export function DashboardContent() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200/50">
                         <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Active Orders</p>
+                                    <p className="text-sm text-muted-foreground font-medium">Active Orders</p>
                                     <p className="text-2xl sm:text-3xl font-bold text-blue-700 dark:text-blue-400">{orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length}</p>
                                 </div>
                                 <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -281,7 +282,7 @@ export function DashboardContent() {
                         <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total Orders</p>
+                                    <p className="text-sm text-muted-foreground font-medium">Total Orders</p>
                                     <p className="text-2xl sm:text-3xl font-bold text-green-700 dark:text-green-400">{orders.length}</p>
                                 </div>
                                 <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
@@ -295,7 +296,7 @@ export function DashboardContent() {
                         <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">My Listings</p>
+                                    <p className="text-sm text-muted-foreground font-medium">My Listings</p>
                                     <p className="text-2xl sm:text-3xl font-bold text-orange-700 dark:text-orange-400">{totalListings}</p>
                                 </div>
                                 <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
@@ -309,7 +310,7 @@ export function DashboardContent() {
                         <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Cart Items</p>
+                                    <p className="text-sm text-muted-foreground font-medium">Cart Items</p>
                                     <p className="text-2xl sm:text-3xl font-bold text-purple-700 dark:text-purple-400">{itemCount}</p>
                                 </div>
                                 <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
@@ -323,17 +324,17 @@ export function DashboardContent() {
                 {/* Tabs */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <TabsList className="flex h-auto w-full overflow-x-auto no-scrollbar justify-start sm:grid sm:grid-cols-3">
-                        <TabsTrigger value="orders" className="gap-2">
+                        <TabsTrigger value="orders" className="gap-2 flex-grow sm:flex-grow-0">
                             <ClipboardList className="h-4 w-4 hidden sm:block" />
-                            My Orders
+                            Orders
                         </TabsTrigger>
-                        <TabsTrigger value="listings" className="gap-2">
+                        <TabsTrigger value="listings" className="gap-2 flex-grow sm:flex-grow-0">
                             <Package className="h-4 w-4 hidden sm:block" />
-                            My Listings
+                            Listings
                         </TabsTrigger>
-                        <TabsTrigger value="cart" className="gap-2">
+                        <TabsTrigger value="cart" className="gap-2 flex-grow sm:flex-grow-0">
                             <ShoppingBag className="h-4 w-4 hidden sm:block" />
-                            My Cart
+                            Cart
                             {itemCount > 0 && (
                                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{itemCount}</Badge>
                             )}
@@ -349,9 +350,9 @@ export function DashboardContent() {
                             </div>
                         ) : orders.length === 0 ? (
                             <Card className="py-16">
-                                <CardContent className="text-center">
-                                    <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                                        <ClipboardList className="h-9 w-9 text-muted-foreground/40" />
+                                <CardContent className="text-center px-4">
+                                    <div className="w-16 sm:w-20 h-16 sm:h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                                        <ClipboardList className="h-8 sm:h-9 w-8 sm:w-9 text-muted-foreground/40" />
                                     </div>
                                     <h3 className="text-lg font-semibold mb-1">No orders yet</h3>
                                     <p className="text-sm text-muted-foreground mb-4">Your order history will appear here once you make a purchase.</p>
@@ -361,8 +362,8 @@ export function DashboardContent() {
                         ) : (
                             orders.map((order) => (
                                 <Card key={order.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <CardHeader className="pb-3 px-4 sm:px-6">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                             <div>
                                                 <CardTitle className="text-base font-semibold">
                                                     Order #{order.id?.slice(0, 8)}
@@ -372,41 +373,43 @@ export function DashboardContent() {
                                                     {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                                                 </CardDescription>
                                             </div>
-                                            <Badge className={`w-fit flex items-center gap-1 ${getStatusColor(order.status)}`}>
+                                            <Badge className={`w-fit flex items-center gap-1 px-3 py-1 ${getStatusColor(order.status)}`}>
                                                 {getStatusIcon(order.status)}
                                                 {order.status}
                                             </Badge>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        <div className="space-y-2">
+                                    <CardContent className="space-y-4 px-4 sm:px-6">
+                                        <div className="space-y-3">
                                             {(order.items || []).map((item: any, i: number) => (
-                                                <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-border/40 last:border-0">
-                                                    <div className="flex items-center gap-3">
+                                                <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-border/40 last:border-0 gap-4">
+                                                    <div className="flex items-center gap-3 min-w-0">
                                                         {item.product_image ? (
-                                                            <Image src={item.product_image} alt={item.product_name} width={36} height={36} className="rounded-md object-cover" />
+                                                            <div className="relative h-10 w-10 flex-shrink-0">
+                                                                <Image src={item.product_image} alt={item.product_name} fill className="rounded-md object-cover" />
+                                                            </div>
                                                         ) : (
-                                                            <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center">
+                                                            <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
                                                                 <Package className="h-4 w-4 text-muted-foreground/40" />
                                                             </div>
                                                         )}
-                                                        <div>
-                                                            <p className="font-medium">{item.product_name}</p>
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium truncate">{item.product_name}</p>
                                                             <p className="text-xs text-muted-foreground">Qty: {item.quantity} × ₹{Number(item.price).toLocaleString("en-IN")}</p>
                                                         </div>
                                                     </div>
-                                                    <span className="font-semibold text-primary">₹{(item.quantity * item.price).toLocaleString("en-IN")}</span>
+                                                    <span className="font-semibold text-primary flex-shrink-0">₹{(item.quantity * item.price).toLocaleString("en-IN")}</span>
                                                 </div>
                                             ))}
                                         </div>
-                                        <Separator />
-                                        <div className="flex justify-between items-center pb-2">
-                                            <span className="text-sm text-muted-foreground">Order Total</span>
+                                        <Separator className="opacity-50" />
+                                        <div className="flex justify-between items-center bg-muted/20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2">
+                                            <span className="text-sm font-medium text-muted-foreground">Order Total</span>
                                             <span className="text-lg font-bold text-primary">₹{Number(order.total).toLocaleString("en-IN")}</span>
                                         </div>
                                         <div className="pt-2">
-                                            <Link href={`/dashboard/invoice/${order.id}`} target="_blank">
-                                                <Button variant="outline" className="w-full sm:w-auto h-9 text-sm">
+                                            <Link href={`/dashboard/invoice/${order.id}`} target="_blank" className="block sm:inline">
+                                                <Button variant="outline" className="w-full sm:w-auto h-10 text-sm">
                                                     <FileText className="mr-2 h-4 w-4" /> View Invoice
                                                 </Button>
                                             </Link>
@@ -426,7 +429,7 @@ export function DashboardContent() {
                             </div>
                         ) : totalListings === 0 ? (
                             <Card className="py-16">
-                                <CardContent className="text-center">
+                                <CardContent className="text-center px-4">
                                     <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
                                         <Package className="h-9 w-9 text-muted-foreground/40" />
                                     </div>
@@ -439,23 +442,28 @@ export function DashboardContent() {
                                 {/* Equipment Listings */}
                                 {equipmentListings.length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold mb-4 px-1 flex items-center gap-2">
                                             <Tractor className="h-5 w-5 text-primary" />
                                             Equipment Listings
                                         </h3>
-                                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {equipmentListings.map((item) => (
-                                                <Card key={item.id} className="hover:shadow-md transition-shadow">
-                                                    <div className="h-36 bg-muted rounded-t-lg overflow-hidden">
+                                                <Card key={item.id} className="hover:shadow-md transition-shadow overflow-hidden">
+                                                    <div className="h-40 bg-muted overflow-hidden relative">
                                                         <img src={item.image || "/placeholder.svg"} alt={item.name} className="w-full h-full object-cover" />
+                                                        <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-foreground hover:bg-background/90" variant="secondary">
+                                                            {item.status || "Available"}
+                                                        </Badge>
                                                     </div>
-                                                    <CardContent className="p-4 space-y-2">
+                                                    <CardContent className="p-4 space-y-3">
                                                         <h4 className="font-semibold line-clamp-1">{item.name}</h4>
                                                         <div className="flex items-center justify-between">
-                                                            <span className="font-bold text-primary">₹{(parseInt(item.price) || 0).toLocaleString()}</span>
-                                                            <Badge variant="outline">{item.status || "Available"}</Badge>
+                                                            <span className="text-lg font-bold text-primary">₹{(parseInt(item.price) || 0).toLocaleString()}</span>
                                                         </div>
-                                                        <p className="text-xs text-muted-foreground">{item.location} • {item.year}</p>
+                                                        <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t border-border/40">
+                                                            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.location}</span>
+                                                            {item.year && <span>• {item.year}</span>}
+                                                        </div>
                                                     </CardContent>
                                                 </Card>
                                             ))}
@@ -466,24 +474,34 @@ export function DashboardContent() {
                                 {/* Crop Listings */}
                                 {cropListings.length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold mb-4 mt-8 px-1 flex items-center gap-2">
                                             <Wheat className="h-5 w-5 text-primary" />
                                             Crop Listings
                                         </h3>
-                                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {cropListings.map((crop) => (
                                                 <Card key={crop.id} className="hover:shadow-md transition-shadow">
-                                                    <CardContent className="p-4 space-y-2">
+                                                    <CardContent className="p-4 space-y-3">
                                                         <div className="flex items-start justify-between">
-                                                            <h4 className="font-semibold">{crop.cropname}</h4>
-                                                            {crop.organic && <Badge className="bg-green-100 text-green-800 text-xs">Organic</Badge>}
+                                                            <div className="min-w-0">
+                                                                <h4 className="font-semibold truncate">{crop.cropname}</h4>
+                                                                <p className="text-xs text-muted-foreground mt-0.5">{crop.variety}</p>
+                                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+                                                                    <MapPin className="h-3 w-3 text-primary/60" />
+                                                                    <span className="truncate">{crop.location}</span>
+                                                                </div>
+                                                            </div>
+                                                            {crop.organic && <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200/50 text-[10px] px-1.5 h-5 uppercase tracking-wider font-bold">Organic</Badge>}
                                                         </div>
-                                                        <p className="text-sm text-muted-foreground">{crop.variety}</p>
-                                                        <div className="flex items-center justify-between text-sm">
-                                                            <span className="text-primary font-semibold">{crop.pricerange}</span>
-                                                            <span className="text-muted-foreground">{crop.quantity}</span>
+                                                        <Separator className="bg-border/40" />
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-primary font-bold">{crop.pricerange}</span>
+                                                            <span className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{crop.quantity}</span>
                                                         </div>
-                                                        <p className="text-xs text-muted-foreground">{crop.location}</p>
+                                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                            <MapPin className="h-3 w-3 flex-shrink-0" />
+                                                            <span className="truncate">{crop.location}</span>
+                                                        </div>
                                                     </CardContent>
                                                 </Card>
                                             ))}
@@ -498,7 +516,7 @@ export function DashboardContent() {
                     <TabsContent value="cart" className="space-y-4">
                         {cartItems.length === 0 ? (
                             <Card className="py-16">
-                                <CardContent className="text-center">
+                                <CardContent className="text-center px-4">
                                     <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
                                         <ShoppingBag className="h-9 w-9 text-muted-foreground/40" />
                                     </div>
@@ -507,16 +525,16 @@ export function DashboardContent() {
                                 </CardContent>
                             </Card>
                         ) : (
-                            <div className="grid lg:grid-cols-3 gap-6">
+                            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
                                 {/* Cart Items */}
                                 <div className="lg:col-span-2 space-y-3">
                                     {cartItems.map((item) => (
                                         <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
                                             <CardContent className="p-4">
-                                                <div className="flex gap-4">
-                                                    <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                                                <div className="flex flex-col sm:flex-row gap-4">
+                                                    <div className="w-full sm:w-24 h-40 sm:h-24 rounded-lg bg-muted overflow-hidden flex-shrink-0 relative">
                                                         {item.product_image ? (
-                                                            <Image src={item.product_image} alt={item.product_name} width={80} height={80} className="w-full h-full object-cover" />
+                                                            <Image src={item.product_image} alt={item.product_name} fill className="object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center">
                                                                 <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
@@ -524,22 +542,26 @@ export function DashboardContent() {
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <h4 className="font-semibold truncate">{item.product_name}</h4>
-                                                        <p className="text-xs text-muted-foreground capitalize mt-0.5">{item.product_type}</p>
-                                                        <p className="font-bold text-primary mt-1">₹{item.price.toLocaleString("en-IN")}</p>
-                                                    </div>
-                                                    <div className="flex flex-col items-end justify-between">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeItem(item.id)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                        <div className="flex items-center gap-1 rounded-lg border border-border/60 px-1">
-                                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>
-                                                                <Minus className="h-3 w-3" />
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="min-w-0">
+                                                                <h4 className="font-semibold text-base truncate">{item.product_name}</h4>
+                                                                <Badge variant="outline" className="mt-1 text-[10px] uppercase font-bold tracking-wider py-0 px-2">{item.product_type}</Badge>
+                                                            </div>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive -mr-2 -mt-1" onClick={() => removeItem(item.id)}>
+                                                                <Trash2 className="h-4 w-4" />
                                                             </Button>
-                                                            <span className="text-sm font-semibold w-6 text-center">{item.quantity}</span>
-                                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
-                                                                <Plus className="h-3 w-3" />
-                                                            </Button>
+                                                        </div>
+                                                        <div className="flex items-center justify-between mt-4 sm:mt-2">
+                                                            <p className="font-bold text-lg text-primary">₹{item.price.toLocaleString("en-IN")}</p>
+                                                            <div className="flex items-center gap-1 rounded-lg border border-border/60 p-1 bg-background">
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>
+                                                                    <Minus className="h-3 w-3" />
+                                                                </Button>
+                                                                <span className="text-sm font-bold w-8 text-center">{item.quantity}</span>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                                                                    <Plus className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -549,34 +571,45 @@ export function DashboardContent() {
                                 </div>
 
                                 {/* Order Summary */}
-                                <div>
-                                    <Card className="sticky top-24">
-                                        <CardHeader>
+                                <div className="mt-4 lg:mt-0">
+                                    <Card className="sticky top-24 shadow-lg border-primary/10">
+                                        <CardHeader className="pb-4">
                                             <CardTitle className="text-lg">Order Summary</CardTitle>
                                         </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between">
+                                        <CardContent className="space-y-6">
+                                            <div className="space-y-3 text-sm">
+                                                <div className="flex justify-between items-center">
                                                     <span className="text-muted-foreground">Subtotal ({itemCount} items)</span>
-                                                    <span className="font-medium">₹{total.toLocaleString("en-IN")}</span>
+                                                    <span className="font-bold">₹{total.toLocaleString("en-IN")}</span>
                                                 </div>
-                                                <div className="flex justify-between">
+                                                <div className="flex justify-between items-center">
                                                     <span className="text-muted-foreground">Delivery</span>
-                                                    <span className="font-medium text-green-600">Free</span>
+                                                    <span className="font-bold text-green-600">FREE</span>
                                                 </div>
-                                                <Separator />
-                                                <div className="flex justify-between text-base font-bold">
-                                                    <span>Total</span>
+                                                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-2" />
+                                                <div className="flex justify-between items-center text-lg font-bold">
+                                                    <span>Total Amount</span>
                                                     <span className="text-primary">₹{total.toLocaleString("en-IN")}</span>
                                                 </div>
                                             </div>
-                                            <Button className="w-full font-semibold shadow-md" size="lg" onClick={handleCheckout} disabled={checkingOut}>
-                                                {checkingOut ? "Placing Order..." : "Place Order"}
-                                                {!checkingOut && <ArrowRight className="h-4 w-4 ml-2" />}
-                                            </Button>
-                                            <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-destructive" onClick={() => { clearCart(); toast.info("Cart cleared") }}>
-                                                Clear Cart
-                                            </Button>
+                                            <div className="space-y-3">
+                                                <Button className="w-full font-bold shadow-lg shadow-primary/20 h-12 text-base transition-all hover:scale-[1.02]" size="lg" onClick={handleCheckout} disabled={checkingOut}>
+                                                    {checkingOut ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                            Processing...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            Secure Checkout
+                                                            <ArrowRight className="h-5 w-5 ml-2" />
+                                                        </>
+                                                    )}
+                                                </Button>
+                                                <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-destructive font-medium" onClick={() => { if (window.confirm("Are you sure you want to clear your cart?")) { clearCart(); toast.info("Cart cleared"); } }}>
+                                                    Clear Shopping Cart
+                                                </Button>
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 </div>
