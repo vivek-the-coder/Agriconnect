@@ -40,6 +40,7 @@ export const metadata: Metadata = {
 }
 
 import { FloatingCartButton } from "@/components/floating-cart-button"
+import { AppWrapper } from "@/components/app-wrapper"
 
 export default function RootLayout({
   children,
@@ -49,10 +50,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} antialiased`} suppressHydrationWarning>
       <body className="font-sans">
-        <CartProvider>
-          {children}
-          <FloatingCartButton />
-        </CartProvider>
+        <AppWrapper>
+          <CartProvider>
+            {children}
+            <FloatingCartButton />
+          </CartProvider>
+        </AppWrapper>
         <Toaster position="top-center" richColors />
       </body>
     </html>
