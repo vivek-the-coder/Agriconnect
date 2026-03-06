@@ -35,7 +35,7 @@ import {
 
 const mockForumPosts = [
   {
-    id: 1,
+    id: "mock-1",
     title: "Monsoon crop planning for Maharashtra region?",
     content: "With the monsoon approaching, what are the best short-duration crops to plant in the Vidarbha region? Looking for advice on soyabean varieties and cotton.",
     author: "Rajesh Patil",
@@ -50,7 +50,7 @@ const mockForumPosts = [
     is_pinned: true,
   },
   {
-    id: 2,
+    id: "mock-2",
     title: "Effective organic pest control for Rice?",
     content: "Are there any effective organic methods to control Stem Borer in Basmati rice? I've heard about Neem oil sprays, but need a proper schedule.",
     author: "Lakshmi Venkat",
@@ -62,21 +62,6 @@ const mockForumPosts = [
     replies: 6,
     created_at: "2024-02-18T09:30:00Z",
     is_resolved: false,
-    is_pinned: false,
-  },
-  {
-    id: 3,
-    title: "Successful transition to Dragon Fruit farming",
-    content: "Sharing my journey of converting 2 acres of barren land into a profitable dragon fruit orchard in Andhra Pradesh. AMA!",
-    author: "Vijay Reddy",
-    author_avatar: "/farmer-avatar.png",
-    location: "Chittoor, AP",
-    category: "Success Stories",
-    tags: ["dragon-fruit", "innovation", "horticulture"],
-    likes: 156,
-    replies: 45,
-    created_at: "2024-02-10T14:20:00Z",
-    is_resolved: true,
     is_pinned: false,
   }
 ]
@@ -115,13 +100,16 @@ export function CommunityForum() {
   const fetchPosts = async () => {
     try {
       setLoading(true)
+      console.log("Fetching forum posts from Supabase...")
+
+      // Attempt a simpler query first to ensure basic connectivity
       const { data, error } = await supabase
         .from('forum_posts')
         .select('*')
-        .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
 
       if (error) {
+        console.error("Supabase query error:", error)
         // Handle common "table missing" or "schema cache" errors gracefully
         if (error.code === 'PGRST116' || error.message?.includes("schema cache") || error.message?.includes("relation") || error.message?.includes("does not exist") || error.code === '42P01') {
           console.warn("Table 'forum_posts' not found, falling back to mock data.")
@@ -131,18 +119,17 @@ export function CommunityForum() {
         throw error
       }
 
+      console.log(`Successfully fetched ${data?.length || 0} live posts.`)
       if (!data || data.length === 0) {
         setPosts(mockForumPosts)
       } else {
-        // Merge live data with mock data for a richer community feel initially
+        // Merge live data with mock data
         setPosts([...data, ...mockForumPosts])
       }
     } catch (err: any) {
-      console.error("Error fetching forum posts:", err.message)
-      // Only show error toast if it's not a standard "missing table" scenario
-      if (!err.message?.includes("relation") && !err.message?.includes("does not exist")) {
-        toast.error("Live community data currently unavailable. Showing trending discussions.")
-      }
+      console.error("Critical error in fetchPosts:", err)
+      const errorMsg = err.message || "Unknown error"
+      toast.error(`Live data unavailable: ${errorMsg}`)
       setPosts(mockForumPosts)
     } finally {
       setLoading(false)
@@ -158,11 +145,13 @@ export function CommunityForum() {
       const { error } = await supabase
         .from('forum_posts')
         .insert([{
-          ...newPost,
+          title: newPost.title,
+          content: newPost.content,
+          category: newPost.category,
           tags: newPost.tags.split(',').map(t => t.trim()).filter(Boolean),
           author: session?.user?.email?.split('@')[0] || "Anonymous Farmer",
           author_avatar: session?.user?.user_metadata?.avatar_url || null,
-          location: "Unknown",
+          location: "Location Hidden",
           likes: 0,
           replies: 0,
           is_resolved: false,
@@ -177,13 +166,13 @@ export function CommunityForum() {
       setShowNewPostDialog(false)
       fetchPosts()
     } catch (err: any) {
-      toast.error(err.message || "Failed to create post. Please ensure the database tables are set up.")
+      toast.error(err.message || "Failed to create post")
     } finally {
       setSubmitting(false)
     }
   }
 
-  const filteredPosts = posts.filter((post) => {
+  const filteredPosts = (posts || []).filter((post) => {
     const matchesSearch =
       (post.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (post.content || "").toLowerCase().includes(searchTerm.toLowerCase())
@@ -192,9 +181,12 @@ export function CommunityForum() {
   })
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (sortBy === "popular") return (b.likes || 0) - (a.likes || 0)
-    if (sortBy === "replies") return (b.replies || 0) - (a.replies || 0)
-    return 0
+    if (sortBy === "popular") return (Number(b.likes) || 0) - (Number(a.likes) || 0)
+    if (sortBy === "replies") return (Number(b.replies) || 0) - (Number(a.replies) || 0)
+    // Default to recent
+    const dateA = new Date(a.created_at || 0).getTime()
+    const dateB = new Date(b.created_at || 0).getTime()
+    return dateB - dateA
   })
 
   if (loading) {
@@ -288,6 +280,7 @@ export function CommunityForum() {
                     <SelectContent>
                       <SelectItem value="recent">Recent</SelectItem>
                       <SelectItem value="popular">Popular</SelectItem>
+                      <SelectItem value="replies">Most Replies</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -319,9 +312,9 @@ export function CommunityForum() {
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {post.likes}</span>
-                            <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" /> {post.replies}</span>
-                            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {new Date(post.created_at).toLocaleDateString()}</span>
+                            <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {post.likes || 0}</span>
+                            <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" /> {post.replies || 0}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Just now'}</span>
                           </div>
                         </div>
                       </div>

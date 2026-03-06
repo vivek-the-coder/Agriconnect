@@ -15,21 +15,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 async function checkTables() {
-    const tables = ['seeds', 'tools', 'equipment', 'schemes', 'export_crops', 'forum_posts']
+    const table = 'forum_posts'
+    console.log(`Checking table: ${table}...`)
+    const { data, error, count } = await supabase
+        .from(table)
+        .select('*', { count: 'exact' })
 
-    for (const table of tables) {
-        console.log(`Checking table: ${table}...`)
-        const { data, error, count } = await supabase
-            .from(table)
-            .select('*', { count: 'exact' })
-
-        if (error) {
-            console.error(`Error checking ${table}:`, error.message)
-        } else {
-            console.log(`Table ${table} exists. Count: ${count}`)
-            if (data && data.length > 0) {
-                console.log(`Sample data for ${table}:`, JSON.stringify(data[0], null, 2).substring(0, 200))
-            }
+    if (error) {
+        console.error(`Error checking ${table}:`, error.message)
+    } else {
+        console.log(`Table ${table} exists. Count: ${count}`)
+        if (data && data.length > 0) {
+            console.log(`Full sample data for ${table}:`, JSON.stringify(data[0], null, 2))
         }
     }
 }
