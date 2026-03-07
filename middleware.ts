@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
                         },
                     })
                     cookiesToSet.forEach(({ name, value, options }) =>
-                        response.cookies.set(name, value, options)
+                        response.cookies.set(name, value, { ...options, path: '/' })
                     )
                 },
             },
@@ -59,5 +59,10 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/admin/:path*', '/dashboard/:path*'],
+    matcher: [
+        '/admin',
+        '/admin/:path*',
+        '/dashboard',
+        '/dashboard/:path*',
+    ],
 }
