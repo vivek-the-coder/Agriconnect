@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sprout, Mail, Lock, Loader2, ArrowRight } from "lucide-react"
 import { auth } from "@/lib/firebase"
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendEmailVerification, signOut } from "firebase/auth"
 import { Navigation } from "@/components/navigation"
 import { toast } from "sonner"
 
@@ -24,7 +24,16 @@ export default function LoginPage() {
         setIsLoading(true)
 
         try {
-            await signInWithEmailAndPassword(auth, email, password)
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            const user = userCredential.user
+
+            if (!user.emailVerified) {
+                await signOut(auth)
+                toast.error("Please verify your email before logging in. Check your inbox.")
+                setIsLoading(false)
+                return
+            }
+
             toast.success("Logged in successfully!")
             router.push("/")
             router.refresh()
