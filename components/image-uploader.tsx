@@ -32,14 +32,21 @@ export function ImageUploader({ images, onImagesChange, folder, maxImages = 5 }:
                 const timestamp = Date.now()
                 const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_")
                 const storageRef = ref(storage, `${folder}/${timestamp}_${safeName}`)
-                await uploadBytes(storageRef, file)
+
+                const timeoutPromise = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error("Upload timed out. Please enable Firebase Storage in your Firebase Console.")), 15000)
+                )
+
+                await Promise.race([uploadBytes(storageRef, file), timeoutPromise])
                 return getDownloadURL(storageRef)
             })
 
             const newUrls = await Promise.all(uploadPromises)
             onImagesChange([...images, ...newUrls])
-        } catch (err) {
+        } catch (err: any) {
             console.error("Image upload failed:", err)
+            const { toast } = await import("sonner")
+            toast.error(err.message || "Image upload failed. Make sure Firebase Storage is enabled.")
         } finally {
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ""

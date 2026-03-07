@@ -3,31 +3,37 @@
 import { useState, useEffect } from "react"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
 import {
-    BarChart3,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {
     FileText,
-    Package,
     Settings,
     Users,
-    ShoppingBag,
     Sprout,
     Wrench,
     Truck,
     MessageSquare,
     Globe,
-    Plus,
-    Search,
     LayoutDashboard,
-    Loader2
+    Loader2,
+    Eye,
+    Pencil,
+    Trash2,
+    ShoppingCart,
 } from "lucide-react"
 import { db, auth } from "@/lib/firebase"
 import { onAuthStateChanged } from "firebase/auth"
-import { collection, query, getCountFromServer, getDocs, doc, updateDoc, addDoc, deleteDoc } from "firebase/firestore"
+import { collection, query, getCountFromServer, onSnapshot, doc, updateDoc, addDoc, deleteDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -79,26 +85,24 @@ export default function AdminPage() {
                     </div>
                     <nav className="flex-1 p-4 space-y-1">
                         <SidebarItem icon={<LayoutDashboard className="h-5 w-5" />} label="Dashboard" active={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} />
-                        <SidebarItem icon={<FileText className="h-5 w-5" />} label="Schemes" active={activeTab === "schemes"} onClick={() => setActiveTab("schemes")} />
                         <SidebarItem icon={<Sprout className="h-5 w-5" />} label="Seeds" active={activeTab === "seeds"} onClick={() => setActiveTab("seeds")} />
-                        <SidebarItem icon={<Wrench className="h-5 w-5" />} label="Tools" active={activeTab === "tools"} onClick={() => setActiveTab("tools")} />
+                        <SidebarItem icon={<Wrench className="h-5 w-5" />} label="Rentals" active={activeTab === "rentals"} onClick={() => setActiveTab("rentals")} />
                         <SidebarItem icon={<Truck className="h-5 w-5" />} label="Equipment" active={activeTab === "equipment"} onClick={() => setActiveTab("equipment")} />
                         <SidebarItem icon={<MessageSquare className="h-5 w-5" />} label="Community" active={activeTab === "community"} onClick={() => setActiveTab("community")} />
-                        <SidebarItem icon={<Globe className="h-5 w-5" />} label="Export Hub" active={activeTab === "export"} onClick={() => setActiveTab("export")} />
-                        <SidebarItem icon={<Users className="h-5 w-5" />} label="Profiles" active={activeTab === "profiles"} onClick={() => setActiveTab("profiles")} />
+                        <SidebarItem icon={<ShoppingCart className="h-5 w-5" />} label="Orders" active={activeTab === "orders"} onClick={() => setActiveTab("orders")} />
+                        <SidebarItem icon={<Users className="h-5 w-5" />} label="Users" active={activeTab === "users"} onClick={() => setActiveTab("users")} />
                     </nav>
                 </aside>
 
                 <main className="flex-1 overflow-y-auto p-8">
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 min-h-full">
                         {activeTab === "dashboard" && <AdminDashboard />}
-                        {activeTab === "schemes" && <AdminPanel title="Government Schemes" />}
-                        {activeTab === "seeds" && <AdminPanel title="Seeds & Tissue Culture" />}
-                        {activeTab === "tools" && <AdminPanel title="Tools & Machines" />}
-                        {activeTab === "equipment" && <AdminPanel title="Used Equipment" />}
-                        {activeTab === "community" && <AdminPanel title="Community Forum" />}
-                        {activeTab === "export" && <AdminPanel title="Export Hub" />}
-                        {activeTab === "profiles" && <AdminPanel title="User Profiles" />}
+                        {activeTab === "seeds" && <AdminCollectionPanel collectionName="seeds" title="Seeds & Tissue Culture" />}
+                        {activeTab === "rentals" && <AdminCollectionPanel collectionName="tool_rentals" title="Equipment Rentals" />}
+                        {activeTab === "equipment" && <AdminCollectionPanel collectionName="equipment" title="Used Equipment" />}
+                        {activeTab === "community" && <AdminCollectionPanel collectionName="forum_posts" title="Community Posts" />}
+                        {activeTab === "orders" && <AdminCollectionPanel collectionName="orders" title="Orders" />}
+                        {activeTab === "users" && <AdminCollectionPanel collectionName="users" title="Users" />}
                     </div>
                 </main>
             </div>
@@ -117,21 +121,26 @@ function SidebarItem({ icon, label, active, onClick }: { icon: any, label: strin
 }
 
 function AdminDashboard() {
-    const [stats, setStats] = useState({ users: "0", schemes: "0", tools: "0", ads: "0" })
+    const [stats, setStats] = useState({ users: "0", seeds: "0", rentals: "0", equipment: "0", orders: "0", posts: "0" })
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const u = await getCountFromServer(collection(db, 'users'))
-                const s = await getCountFromServer(collection(db, 'schemes'))
-                const t = await getCountFromServer(collection(db, 'tools'))
-                const e = await getCountFromServer(collection(db, 'equipment'))
-
+                const [u, s, r, e, o, p] = await Promise.all([
+                    getCountFromServer(collection(db, 'users')),
+                    getCountFromServer(collection(db, 'seeds')),
+                    getCountFromServer(collection(db, 'tool_rentals')),
+                    getCountFromServer(collection(db, 'equipment')),
+                    getCountFromServer(collection(db, 'orders')),
+                    getCountFromServer(collection(db, 'forum_posts')),
+                ])
                 setStats({
                     users: u.data().count.toString(),
-                    schemes: s.data().count.toString(),
-                    tools: t.data().count.toString(),
-                    ads: e.data().count.toString()
+                    seeds: s.data().count.toString(),
+                    rentals: r.data().count.toString(),
+                    equipment: e.data().count.toString(),
+                    orders: o.data().count.toString(),
+                    posts: p.data().count.toString(),
                 })
             } catch (err) {
                 console.error(err)
@@ -143,11 +152,13 @@ function AdminDashboard() {
     return (
         <div className="space-y-8">
             <h1 className="text-3xl font-bold">Overview</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <StatCard title="Users" value={stats.users} icon={<Users />} color="bg-blue-500" />
-                <StatCard title="Schemes" value={stats.schemes} icon={<FileText />} color="bg-emerald-500" />
-                <StatCard title="Tools" value={stats.tools} icon={<Wrench />} color="bg-orange-500" />
-                <StatCard title="Equipment" value={stats.ads} icon={<Truck />} color="bg-purple-500" />
+                <StatCard title="Seeds" value={stats.seeds} icon={<Sprout />} color="bg-emerald-500" />
+                <StatCard title="Rentals" value={stats.rentals} icon={<Wrench />} color="bg-orange-500" />
+                <StatCard title="Equipment" value={stats.equipment} icon={<Truck />} color="bg-purple-500" />
+                <StatCard title="Orders" value={stats.orders} icon={<ShoppingCart />} color="bg-pink-500" />
+                <StatCard title="Forum Posts" value={stats.posts} icon={<MessageSquare />} color="bg-cyan-500" />
             </div>
         </div>
     )
@@ -165,113 +176,187 @@ function StatCard({ title, value, icon, color }: any) {
     )
 }
 
-function AdminPanel({ title }: { title: string }) {
+/* ========================================================================
+   REAL-TIME ADMIN COLLECTION PANEL — onSnapshot + View/Edit/Delete
+   ======================================================================== */
+
+function AdminCollectionPanel({ collectionName, title }: { collectionName: string, title: string }) {
     const [items, setItems] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [isAdding, setIsAdding] = useState(false)
-    const [editingItem, setEditingItem] = useState<any>(null)
-    const [formData, setFormData] = useState<any>({})
+    const [searchTerm, setSearchTerm] = useState("")
 
-    const getTableName = () => {
-        const t = title.toLowerCase()
-        if (t.includes("schemes")) return "schemes"
-        if (t.includes("seeds")) return "seeds"
-        if (t.includes("tools")) return "tools"
-        if (t.includes("equipment")) return "equipment"
-        if (t.includes("community")) return "forum_posts"
-        if (t.includes("export")) return "export_crops"
-        if (t.includes("user")) return "profiles"
-        return t
-    }
+    // Dialog state
+    const [viewItem, setViewItem] = useState<any>(null)
+    const [editItem, setEditItem] = useState<any>(null)
+    const [editFormData, setEditFormData] = useState<any>({})
 
-    const fetchData = async () => {
+    // Real-time listener
+    useEffect(() => {
         setLoading(true)
-        const table = getTableName()
-        const collName = table === "profiles" ? "users" : table
-        try {
-            const q = query(collection(db, collName))
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout fetching data")), 5000))
-            const snapshot = await Promise.race([getDocs(q), timeoutPromise]) as any
-            const data = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }))
-            setItems(data.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()))
-        } catch (err) {
-            console.error(err)
-            setItems([])
+        const q = query(collection(db, collectionName))
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+            data.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+            setItems(data)
+            setLoading(false)
+        }, (err) => {
+            console.error("Realtime error:", err)
+            setLoading(false)
+        })
+        return () => unsubscribe()
+    }, [collectionName])
+
+    // Get columns based on collection type
+    const getColumns = () => {
+        switch (collectionName) {
+            case "seeds":
+                return ["name", "category", "price", "unit"]
+            case "tool_rentals":
+                return ["name", "category", "rentalPrice", "location", "availability"]
+            case "equipment":
+                return ["name", "category", "price", "location", "condition"]
+            case "forum_posts":
+                return ["title", "author_name", "created_at"]
+            case "orders":
+                return ["user_email", "total", "status", "created_at"]
+            case "users":
+                return ["email", "displayName", "created_at"]
+            default:
+                return ["name"]
         }
-        setLoading(false)
     }
 
-    useEffect(() => { fetchData() }, [title])
+    const getDisplayLabel = (key: string) => {
+        const map: any = {
+            name: "Name", category: "Category", price: "Price (₹)", unit: "Unit",
+            rentalPrice: "Rent (₹)", location: "Location", availability: "Status",
+            condition: "Condition", title: "Title", author_name: "Author",
+            created_at: "Created", user_email: "Email", total: "Total (₹)",
+            status: "Status", email: "Email", displayName: "Name",
+        }
+        return map[key] || key
+    }
 
-    const handleSave = async (e: React.FormEvent) => {
-        e.preventDefault()
-        const table = getTableName()
-        const collName = table === "profiles" ? "users" : table
+    const formatCellValue = (item: any, key: string) => {
+        const val = item[key]
+        if (val === undefined || val === null) return "—"
+        if (key === "created_at") {
+            try { return new Date(val).toLocaleDateString("en-IN") } catch { return val }
+        }
+        if (key === "price" || key === "rentalPrice" || key === "total") {
+            return `₹${Number(val).toLocaleString("en-IN")}`
+        }
+        if (key === "availability" || key === "status" || key === "condition") {
+            return <Badge variant="outline" className="text-xs">{val}</Badge>
+        }
+        return String(val).length > 40 ? String(val).slice(0, 40) + "…" : String(val)
+    }
 
+    const getNameKey = () => {
+        if (collectionName === "forum_posts") return "title"
+        if (collectionName === "orders") return "user_email"
+        if (collectionName === "users") return "email"
+        return "name"
+    }
+
+    // Filter
+    const nameKey = getNameKey()
+    const filteredItems = items.filter((item) => {
+        const nm = (item[nameKey] || "").toLowerCase()
+        const cat = (item.category || "").toLowerCase()
+        const loc = (item.location || "").toLowerCase()
+        const s = searchTerm.toLowerCase()
+        return nm.includes(s) || cat.includes(s) || loc.includes(s)
+    })
+
+    // Edit handlers
+    const handleEditOpen = (item: any) => {
+        setEditItem(item)
+        setEditFormData({ ...item })
+    }
+
+    const handleEditSave = async () => {
+        if (!editItem) return
         try {
-            if (editingItem) {
-                await updateDoc(doc(db, collName, editingItem.id), formData)
-            } else {
-                await addDoc(collection(db, collName), { ...formData, created_at: new Date().toISOString() })
-            }
-            toast.success("Success!")
-            setIsAdding(false)
-            setEditingItem(null)
-            fetchData()
-        } catch (error: any) {
-            toast.error(error.message)
+            const { id, ...rest } = editFormData
+            await updateDoc(doc(db, collectionName, editItem.id), rest)
+            toast.success("Updated successfully!")
+            setEditItem(null)
+        } catch (err: any) {
+            toast.error(err.message || "Update failed")
         }
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure?")) return
-        const table = getTableName()
-        const collName = table === "profiles" ? "users" : table
-
+        if (!confirm("Are you sure you want to delete this item? This cannot be undone.")) return
         try {
-            await deleteDoc(doc(db, collName, id))
-            toast.success("Deleted")
-            fetchData()
-        } catch (error: any) {
-            toast.error(error.message)
+            await deleteDoc(doc(db, collectionName, id))
+            toast.success("Deleted successfully!")
+        } catch (err: any) {
+            toast.error(err.message || "Delete failed")
         }
     }
 
-    const nameKey = getTableName() === 'export_crops' ? 'cropname' : (getTableName() === 'forum_posts' ? 'title' : 'name')
+    const columns = getColumns()
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">{title}</h2>
-                <Button onClick={() => { setIsAdding(!isAdding); setEditingItem(null); setFormData({}) }}>
-                    {isAdding ? "Cancel" : "Add New"}
-                </Button>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold">{title}</h2>
+                    <p className="text-sm text-muted-foreground">{filteredItems.length} items • Real-time synced</p>
+                </div>
+                <Input
+                    placeholder="Search by name, category, location..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-xs"
+                />
             </div>
 
-            {isAdding && (
-                <form onSubmit={handleSave} className="space-y-4 p-4 border rounded-lg">
-                    <Input placeholder="Name/Title" value={formData[nameKey] || ""} onChange={e => setFormData({ ...formData, [nameKey]: e.target.value })} required />
-                    <Textarea placeholder="Description" value={formData.description || formData.content || ""} onChange={e => setFormData({ ...formData, [getTableName() === 'forum_posts' ? 'content' : 'description']: e.target.value })} />
-                    <Button type="submit">Save</Button>
-                </form>
-            )}
-
-            {loading ? <Loader2 className="animate-spin mx-auto" /> : (
-                <div className="border rounded-lg overflow-hidden">
+            {loading ? (
+                <div className="py-20 flex justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : filteredItems.length === 0 ? (
+                <div className="py-20 text-center text-muted-foreground">
+                    No items found in this collection.
+                </div>
+            ) : (
+                <div className="border rounded-lg overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 border-b">
                             <tr>
-                                <th className="px-6 py-4">Name/Title</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase">#</th>
+                                {columns.map((col) => (
+                                    <th key={col} className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase">
+                                        {getDisplayLabel(col)}
+                                    </th>
+                                ))}
+                                <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {items.map(item => (
-                                <tr key={item.id} className="border-b last:border-0">
-                                    <td className="px-6 py-4 font-medium">{item[nameKey]}</td>
-                                    <td className="px-6 py-4 text-right space-x-2">
-                                        <Button variant="ghost" size="sm" onClick={() => { setEditingItem(item); setFormData(item); setIsAdding(true) }}>Edit</Button>
-                                        <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(item.id)}>Delete</Button>
+                            {filteredItems.map((item, idx) => (
+                                <tr key={item.id} className="border-b last:border-0 hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
+                                    {columns.map((col) => (
+                                        <td key={col} className="px-4 py-3 max-w-[200px] truncate">
+                                            {formatCellValue(item, col)}
+                                        </td>
+                                    ))}
+                                    <td className="px-4 py-3 text-right">
+                                        <div className="flex justify-end gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => setViewItem(item)} title="View">
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600" onClick={() => handleEditOpen(item)} title="Edit">
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => handleDelete(item.id)} title="Delete">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -279,6 +364,77 @@ function AdminPanel({ title }: { title: string }) {
                     </table>
                 </div>
             )}
+
+            {/* ============ VIEW DIALOG ============ */}
+            <Dialog open={!!viewItem} onOpenChange={(o) => !o && setViewItem(null)}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{viewItem?.[nameKey] || "Details"}</DialogTitle>
+                        <DialogDescription>Full record details</DialogDescription>
+                    </DialogHeader>
+                    {viewItem && (
+                        <div className="space-y-4">
+                            {viewItem.image && viewItem.image !== "/placeholder.svg" && (
+                                <img src={viewItem.image} alt="" className="w-full h-48 object-cover rounded-lg" />
+                            )}
+                            {viewItem.images && viewItem.images.length > 0 && (
+                                <div className="flex gap-2 flex-wrap">
+                                    {viewItem.images.map((img: string, i: number) => (
+                                        <img key={i} src={img} alt={`Photo ${i + 1}`} className="w-24 h-24 object-cover rounded-lg border" />
+                                    ))}
+                                </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                {Object.entries(viewItem).filter(([k]) => !["id", "image", "images", "user_id"].includes(k)).map(([key, value]) => (
+                                    <div key={key} className="space-y-0.5">
+                                        <p className="text-xs text-muted-foreground font-medium uppercase">{key.replace(/_/g, " ")}</p>
+                                        <p className="font-medium break-words">
+                                            {typeof value === "object" ? JSON.stringify(value) : String(value || "—")}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* ============ EDIT DIALOG ============ */}
+            <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Edit: {editItem?.[nameKey]}</DialogTitle>
+                        <DialogDescription>Modify the fields below and save</DialogDescription>
+                    </DialogHeader>
+                    {editItem && (
+                        <div className="space-y-4">
+                            {Object.entries(editFormData)
+                                .filter(([k]) => !["id", "user_id", "images", "image", "created_at", "likes", "features"].includes(k))
+                                .map(([key, value]) => (
+                                    <div key={key} className="space-y-1.5">
+                                        <Label className="text-xs uppercase text-muted-foreground">{key.replace(/_/g, " ")}</Label>
+                                        {String(value || "").length > 60 ? (
+                                            <Textarea
+                                                value={String(editFormData[key] || "")}
+                                                onChange={(e) => setEditFormData({ ...editFormData, [key]: e.target.value })}
+                                                rows={3}
+                                            />
+                                        ) : (
+                                            <Input
+                                                value={String(editFormData[key] || "")}
+                                                onChange={(e) => setEditFormData({ ...editFormData, [key]: e.target.value })}
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            <div className="flex justify-end gap-2 pt-4">
+                                <Button variant="outline" onClick={() => setEditItem(null)}>Cancel</Button>
+                                <Button onClick={handleEditSave}>Save Changes</Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
