@@ -34,7 +34,12 @@ export async function middleware(request: NextRequest) {
 
     const {
         data: { user },
+        error
     } = await supabase.auth.getUser()
+
+    console.log('Middleware Path:', request.nextUrl.pathname)
+    console.log('Middleware User:', user?.email || 'None')
+    if (error) console.error('Middleware Auth Error:', error.message)
 
     // Protect admin routes
     if (request.nextUrl.pathname.startsWith('/admin')) {
