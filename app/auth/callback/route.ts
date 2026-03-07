@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const next = searchParams.get('next') ?? '/'
 
     if (code) {
+        const response = NextResponse.redirect(`${origin}${next}`)
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -19,10 +20,10 @@ export async function GET(request: NextRequest) {
                     },
                     setAll(cookiesToSet) {
                         cookiesToSet.forEach(({ name, value, options }) =>
-                            request.cookies.set(name, value)
+                            request.cookies.set(name, value, options)
                         )
                         cookiesToSet.forEach(({ name, value, options }) =>
-                            request.cookies.set(name, value, options)
+                            response.cookies.set(name, value, options)
                         )
                     },
                 },
@@ -30,10 +31,10 @@ export async function GET(request: NextRequest) {
         )
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
-            return NextResponse.redirect(`${origin}${next}`)
+            return response
         }
     }
 
     // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+    return NextResponse.redirect(`${origin}/login?error=auth-code-error`)
 }
