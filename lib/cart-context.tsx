@@ -8,7 +8,7 @@ import { onAuthStateChanged } from "firebase/auth"
 export interface CartItem {
     id: string
     product_id: string
-    product_type: "seed" | "tool" | "equipment"
+    product_type: "seed" | "tool" | "equipment" | "rental"
     product_name: string
     product_image?: string
     price: number

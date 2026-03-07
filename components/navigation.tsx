@@ -14,7 +14,7 @@ const navItems = [
   { name: "Government Schemes", href: "/schemes" },
   { name: "Export Hub", href: "/export-hub" },
   { name: "Farmer Community", href: "/community" },
-  { name: "Tools & Machines", href: "/tools" },
+  { name: "Rent Equipment", href: "/tools" },
   { name: "Seeds & Tissue Culture", href: "/seeds" },
   { name: "Used Equipment Shop", href: "/used-equipment" },
   { name: "Contact", href: "/contact" },
