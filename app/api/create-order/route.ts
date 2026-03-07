@@ -17,8 +17,12 @@ export async function POST(req: Request) {
             );
         }
 
+        // Razorpay test mode has a max limit of ₹5,00,000 (50,000,000 paise)
+        const amountInPaise = Math.round(amount * 100);
+        const cappedAmount = Math.min(amountInPaise, 50000000);
+
         const options = {
-            amount: Math.round(amount * 100), // Razorpay requires amount in paise (multiply by 100)
+            amount: cappedAmount,
             currency: "INR",
             receipt: `rcpt_${Date.now()}`,
         };

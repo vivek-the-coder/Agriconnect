@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { supabase } from "@/lib/supabase"
+import { db, auth } from "@/lib/firebase"
+import { collection, query, getDocs, addDoc, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, orderBy } from "firebase/firestore"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ import {
   AlertTriangle,
   Loader2,
   RefreshCw,
+  Send,
 } from "lucide-react"
 
 const mockForumPosts = [
@@ -78,6 +80,187 @@ const categories = [
   { name: "General Discussion", icon: MessageCircle, count: 2 },
 ]
 
+function ForumPostCard({ post }: { post: any }) {
+  const [comments, setComments] = useState<any[]>([])
+  const [showComments, setShowComments] = useState(false)
+  const [newComment, setNewComment] = useState("")
+  const [isLiking, setIsLiking] = useState(false)
+  const [isCommenting, setIsCommenting] = useState(false)
+
+  const currentUserId = auth.currentUser?.uid
+  const hasLiked = currentUserId && post.liked_by?.includes(currentUserId)
+
+  useEffect(() => {
+    if (!showComments || !post.id || post.id.startsWith("mock-")) return
+
+    const q = query(collection(db, "forum_posts", post.id, "comments"), orderBy("created_at", "asc"))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      setComments(data)
+    })
+    return () => unsubscribe()
+  }, [showComments, post.id])
+
+  const handleLike = async () => {
+    if (!currentUserId) {
+      toast.error("Please log in to like a post")
+      return
+    }
+    if (post.id.startsWith("mock-")) {
+      toast.info("Cannot like a mock post.")
+      return
+    }
+
+    try {
+      setIsLiking(true)
+      const postRef = doc(db, "forum_posts", post.id)
+      if (hasLiked) {
+        await updateDoc(postRef, {
+          liked_by: arrayRemove(currentUserId),
+          likes: (post.likes || 1) - 1
+        })
+      } else {
+        await updateDoc(postRef, {
+          liked_by: arrayUnion(currentUserId),
+          likes: (post.likes || 0) + 1
+        })
+      }
+    } catch (err: any) {
+      toast.error("Failed to like post")
+    } finally {
+      setIsLiking(false)
+    }
+  }
+
+  const handleComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!currentUserId) {
+      toast.error("Please log in to comment")
+      return
+    }
+    if (!newComment.trim()) return
+
+    try {
+      setIsCommenting(true)
+      const commentsRef = collection(db, "forum_posts", post.id, "comments")
+      await addDoc(commentsRef, {
+        content: newComment,
+        author: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || "Anonymous",
+        author_avatar: auth.currentUser?.photoURL || null,
+        user_id: currentUserId,
+        created_at: new Date().toISOString()
+      })
+
+      const postRef = doc(db, "forum_posts", post.id)
+      await updateDoc(postRef, {
+        replies: (post.replies || 0) + 1
+      })
+
+      setNewComment("")
+    } catch (err: any) {
+      toast.error("Failed to add comment")
+    } finally {
+      setIsCommenting(false)
+    }
+  }
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <div className="flex gap-2 mb-2">
+            {post.is_pinned && <Badge className="bg-yellow-100 text-yellow-800">Pinned</Badge>}
+            {post.is_resolved && <Badge className="bg-green-100 text-green-800">Solved</Badge>}
+            <Badge variant="outline">{post.category}</Badge>
+          </div>
+          <h3 className="text-lg font-semibold cursor-pointer hover:text-primary">{post.title}</h3>
+          <p className="text-muted-foreground whitespace-pre-wrap">{post.content}</p>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t gap-4 sm:gap-0">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={post.author_avatar} />
+                <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+              </Avatar>
+              <div className="text-sm">
+                <p className="font-medium">{post.author}</p>
+                <p className="text-muted-foreground text-xs">{post.location || "Location Hidden"}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <button
+                onClick={handleLike}
+                disabled={isLiking || post.id.startsWith("mock-")}
+                className={`flex items-center gap-1 transition-colors hover:text-primary ${hasLiked ? 'text-primary font-medium' : ''}`}
+              >
+                <ThumbsUp className={`h-4 w-4 ${hasLiked ? 'fill-current' : ''}`} />
+                {post.likes || 0}
+              </button>
+
+              <button
+                onClick={() => setShowComments(!showComments)}
+                disabled={post.id.startsWith("mock-")}
+                className="flex items-center gap-1 transition-colors hover:text-primary"
+              >
+                <MessageCircle className="h-4 w-4" />
+                {post.replies || 0}
+              </button>
+
+              <span className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Just now'}
+              </span>
+            </div>
+          </div>
+
+          {showComments && !post.id.startsWith("mock-") && (
+            <div className="mt-4 pt-4 border-t space-y-4">
+              {comments.length > 0 ? (
+                <div className="space-y-3">
+                  {comments.map(c => (
+                    <div key={c.id} className="bg-muted/50 rounded-lg p-3 text-sm flex gap-3 cursor-default">
+                      <Avatar className="h-6 w-6 shrink-0 mt-0.5">
+                        <AvatarImage src={c.author_avatar} />
+                        <AvatarFallback><User className="h-3 w-3" /></AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold">{c.author}</span>
+                          <span className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-foreground">{c.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-2">No comments yet. Be the first!</p>
+              )}
+
+              {currentUserId ? (
+                <form onSubmit={handleComment} className="flex items-center gap-2">
+                  <Input
+                    placeholder="Write a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="flex-1 bg-background"
+                  />
+                  <Button type="submit" size="sm" disabled={isCommenting || !newComment.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              ) : (
+                <p className="text-xs text-center text-muted-foreground">Log in to add a comment.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function CommunityForum() {
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -95,77 +278,66 @@ export function CommunityForum() {
     tags: "",
   })
 
-  const fetchPosts = useCallback(async () => {
-    try {
-      setLoading(true)
-      setFetchError(null)
-      console.log("Fetching forum posts from Supabase...")
+  useEffect(() => {
+    setLoading(true)
+    setFetchError(null)
 
-      const { data, error } = await supabase
-        .from('forum_posts')
-        .select('*')
-        .order('created_at', { ascending: false })
+    const q = query(collection(db, "forum_posts"), orderBy("created_at", "desc"))
 
-      if (error) {
-        console.error("Supabase query error:", error)
-        if (error.code === 'PGRST116' || error.message?.includes("schema cache") || error.message?.includes("relation") || error.message?.includes("does not exist") || error.code === '42P01') {
-          console.warn("Table 'forum_posts' not found, falling back to mock data.")
-          setPosts(mockForumPosts)
-          return
-        }
-        throw error
-      }
+    // Fallback timeout in case onSnapshot completely hangs
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+    }, 5000)
 
-      console.log(`Successfully fetched ${data?.length || 0} live posts.`)
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      clearTimeout(timeoutId)
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
       if (!data || data.length === 0) {
         setPosts(mockForumPosts)
       } else {
         setPosts([...data, ...mockForumPosts])
       }
-    } catch (err: any) {
-      console.error("Critical error in fetchPosts:", err)
-      const errorMsg = err.message || "Unknown error"
-      setFetchError(errorMsg)
-      toast.error(`Live data unavailable: ${errorMsg}`)
-      setPosts(mockForumPosts)
-    } finally {
       setLoading(false)
+    }, (err) => {
+      clearTimeout(timeoutId)
+      console.error("Critical error in onSnapshot:", err)
+      setFetchError(err.message || "Unknown error")
+      toast.error(`Live data unavailable: ${err.message}`)
+      setPosts(mockForumPosts)
+      setLoading(false)
+    })
+
+    return () => {
+      clearTimeout(timeoutId)
+      unsubscribe()
     }
   }, [])
-
-  useEffect(() => {
-    fetchPosts()
-  }, [fetchPosts])
 
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       setSubmitting(true)
-      const { data: { session } } = await supabase.auth.getSession()
+      const sessionUser = auth.currentUser
 
-      const { error } = await supabase
-        .from('forum_posts')
-        .insert([{
-          title: newPost.title,
-          content: newPost.content,
-          category: newPost.category,
-          tags: newPost.tags.split(',').map(t => t.trim()).filter(Boolean),
-          author: session?.user?.email?.split('@')[0] || "Anonymous Farmer",
-          author_avatar: session?.user?.user_metadata?.avatar_url || null,
-          location: "Location Hidden",
-          likes: 0,
-          replies: 0,
-          is_resolved: false,
-          is_pinned: false,
-          user_id: session?.user?.id || null
-        }])
-
-      if (error) throw error
+      await addDoc(collection(db, 'forum_posts'), {
+        title: newPost.title,
+        content: newPost.content,
+        category: newPost.category,
+        tags: newPost.tags.split(',').map(t => t.trim()).filter(Boolean),
+        author: sessionUser?.displayName || sessionUser?.email?.split('@')[0] || "Anonymous Farmer",
+        author_avatar: sessionUser?.photoURL || null,
+        location: "Location Hidden",
+        likes: 0,
+        replies: 0,
+        is_resolved: false,
+        is_pinned: false,
+        user_id: sessionUser?.uid || null,
+        created_at: new Date().toISOString()
+      })
 
       toast.success("Post created successfully!")
       setNewPost({ title: "", content: "", category: "", tags: "" })
       setShowNewPostDialog(false)
-      fetchPosts()
     } catch (err: any) {
       toast.error(err.message || "Failed to create post")
     } finally {
@@ -209,7 +381,7 @@ export function CommunityForum() {
         {fetchError && (
           <div className="mb-6 flex items-center justify-center gap-4 p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
             <span className="text-sm">Live data sync issue. Syncing failed with timeout.</span>
-            <Button variant="outline" size="sm" onClick={() => fetchPosts()} className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />
               Retry Sync
             </Button>
@@ -300,36 +472,7 @@ export function CommunityForum() {
             <div className="space-y-4">
               {sortedPosts.length > 0 ? (
                 sortedPosts.map((post) => (
-                  <Card key={post.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        <div className="flex gap-2 mb-2">
-                          {post.is_pinned && <Badge className="bg-yellow-100 text-yellow-800">Pinned</Badge>}
-                          {post.is_resolved && <Badge className="bg-green-100 text-green-800">Solved</Badge>}
-                          <Badge variant="outline">{post.category}</Badge>
-                        </div>
-                        <h3 className="text-lg font-semibold cursor-pointer hover:text-primary">{post.title}</h3>
-                        <p className="text-muted-foreground line-clamp-2">{post.content}</p>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t gap-4 sm:gap-0">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={post.author_avatar} />
-                              <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                            </Avatar>
-                            <div className="text-sm">
-                              <p className="font-medium">{post.author}</p>
-                              <p className="text-muted-foreground text-xs">{post.location}</p>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" /> {post.likes || 0}</span>
-                            <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" /> {post.replies || 0}</span>
-                            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Just now'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ForumPostCard key={post.id} post={post} />
                 ))
               ) : (
                 <Card className="p-12 text-center">

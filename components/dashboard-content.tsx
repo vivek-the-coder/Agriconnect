@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { supabase } from "@/lib/supabase"
+import { auth, db } from "@/lib/firebase"
+import { onAuthStateChanged } from "firebase/auth"
+import { collection, query, where, getDocs } from "firebase/firestore"
 import { useCart } from "@/lib/cart-context"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -33,11 +35,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 
-declare global {
-    interface Window {
-        Razorpay: any;
-    }
-}
+
 
 function getStatusColor(status: string) {
     switch (status?.toLowerCase()) {
@@ -73,15 +71,19 @@ export function DashboardContent() {
     const [loading, setLoading] = useState(true)
     const [checkingOut, setCheckingOut] = useState(false)
     const { items: cartItems, removeItem, updateQuantity, clearCart, total, itemCount } = useCart()
+    const router = useRouter();
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session?.user) {
-                setUserId(session.user.id)
-                setUserEmail(session.user.email || "")
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUserId(user.uid)
+                setUserEmail(user.email || "")
+            } else {
+                router.push('/login')
             }
         })
-    }, [])
+        return () => unsubscribe()
+    }, [router])
 
     useEffect(() => {
         if (userId) {
@@ -92,29 +94,25 @@ export function DashboardContent() {
     const fetchData = async () => {
         setLoading(true)
         try {
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout fetching data")), 5000))
+
             // Fetch orders
-            const { data: ordersData } = await supabase
-                .from("orders")
-                .select("*")
-                .eq("user_id", userId)
-                .order("created_at", { ascending: false })
-            setOrders(ordersData || [])
+            const ordersQuery = query(collection(db, "orders"), where("user_id", "==", userId))
+            const ordersSnapshot = await Promise.race([getDocs(ordersQuery), timeoutPromise]) as any
+            const ordersData = ordersSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }))
+            setOrders(ordersData.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
 
             // Fetch equipment listings
-            const { data: equipData } = await supabase
-                .from("equipment")
-                .select("*")
-                .eq("user_id", userId)
-                .order("created_at", { ascending: false })
-            setEquipmentListings(equipData || [])
+            const equipQuery = query(collection(db, "equipment"), where("user_id", "==", userId))
+            const equipSnapshot = await Promise.race([getDocs(equipQuery), timeoutPromise]) as any
+            const equipData = equipSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }))
+            setEquipmentListings(equipData.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
 
             // Fetch crop listings
-            const { data: cropData } = await supabase
-                .from("export_crops")
-                .select("*")
-                .eq("user_id", userId)
-                .order("created_at", { ascending: false })
-            setCropListings(cropData || [])
+            const cropQuery = query(collection(db, "export_crops"), where("user_id", "==", userId))
+            const cropSnapshot = await Promise.race([getDocs(cropQuery), timeoutPromise]) as any
+            const cropData = cropSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }))
+            setCropListings(cropData.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
         } catch (err) {
             console.error("Error fetching dashboard data:", err)
         } finally {
@@ -122,7 +120,7 @@ export function DashboardContent() {
         }
     }
 
-    const router = useRouter();
+
 
     const loadRazorpayScript = useCallback(() => {
         return new Promise((resolve) => {
@@ -178,6 +176,7 @@ export function DashboardContent() {
                                 razorpay_signature: response.razorpay_signature,
                                 items: cartItems,
                                 total,
+                                userId,
                             }),
                         });
 
@@ -204,6 +203,7 @@ export function DashboardContent() {
                                     razorpay_order_id: orderData.id,
                                     items: cartItems,
                                     total,
+                                    userId,
                                 }),
                             });
                             const failData = await failRes.json();
@@ -232,6 +232,7 @@ export function DashboardContent() {
                             razorpay_order_id: orderData.id,
                             items: cartItems,
                             total,
+                            userId,
                         }),
                     });
                     const failData = await failRes.json();

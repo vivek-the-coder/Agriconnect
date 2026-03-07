@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sprout, Mail, ArrowLeft, Loader2 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { auth } from "@/lib/firebase"
+import { sendPasswordResetEmail } from "firebase/auth"
 import { Navigation } from "@/components/navigation"
 import { toast } from "sonner"
 
@@ -21,18 +22,13 @@ export default function ForgotPasswordPage() {
         setIsLoading(true)
 
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/reset-password`,
+            await sendPasswordResetEmail(auth, email, {
+                url: `${window.location.origin}/login`, // Optional config
             })
-
-            if (error) {
-                toast.error(error.message)
-            } else {
-                toast.success("Password reset link sent to your email!")
-                setIsSubmitted(true)
-            }
-        } catch (error) {
-            toast.error("An unexpected error occurred")
+            toast.success("Password reset link sent to your email!")
+            setIsSubmitted(true)
+        } catch (error: any) {
+            toast.error(error.message || "An unexpected error occurred")
         } finally {
             setIsLoading(false)
         }

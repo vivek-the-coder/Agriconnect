@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sprout, Lock, Loader2, ArrowRight } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { auth } from "@/lib/firebase"
+import { confirmPasswordReset } from "firebase/auth"
 import { Navigation } from "@/components/navigation"
 import { toast } from "sonner"
 
@@ -29,16 +30,17 @@ export default function ResetPasswordPage() {
         setIsLoading(true)
 
         try {
-            const { error } = await supabase.auth.updateUser({
-                password: password
-            })
+            const searchParams = new URLSearchParams(window.location.search)
+            const oobCode = searchParams.get('oobCode')
 
-            if (error) {
-                toast.error(error.message)
-            } else {
-                toast.success("Password updated successfully!")
-                router.push("/login")
+            if (!oobCode) {
+                toast.error("Invalid or missing password reset code.")
+                return
             }
+
+            await confirmPasswordReset(auth, oobCode, password)
+            toast.success("Password updated successfully!")
+            router.push("/login")
         } catch (error) {
             toast.error("An unexpected error occurred")
         } finally {

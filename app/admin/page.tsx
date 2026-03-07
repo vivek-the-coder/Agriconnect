@@ -25,7 +25,9 @@ import {
     LayoutDashboard,
     Loader2
 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { db, auth } from "@/lib/firebase"
+import { onAuthStateChanged } from "firebase/auth"
+import { collection, query, getCountFromServer, getDocs, doc, updateDoc, addDoc, deleteDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -36,25 +38,24 @@ export default function AdminPage() {
     const router = useRouter()
 
     useEffect(() => {
-        const checkAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (!currentUser) {
                 toast.error("Please login to access admin panel")
                 router.push("/login")
                 return
             }
 
-            if (session.user.email !== 'admin@agro.com') {
+            if (currentUser.email !== 'admin@agro.com') {
                 toast.error("Access Denied: You do not have admin privileges")
                 router.push("/")
                 return
             }
 
-            setUser(session.user)
+            setUser(currentUser)
             setLoading(false)
-        }
-        checkAuth()
-    }, [])
+        })
+        return () => unsubscribe()
+    }, [router])
 
     if (loading) {
         return (
@@ -120,17 +121,21 @@ function AdminDashboard() {
 
     useEffect(() => {
         const fetchStats = async () => {
-            const { count: u } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
-            const { count: s } = await supabase.from('schemes').select('*', { count: 'exact', head: true })
-            const { count: t } = await supabase.from('tools').select('*', { count: 'exact', head: true })
-            const { count: e } = await supabase.from('equipment').select('*', { count: 'exact', head: true })
+            try {
+                const u = await getCountFromServer(collection(db, 'users'))
+                const s = await getCountFromServer(collection(db, 'schemes'))
+                const t = await getCountFromServer(collection(db, 'tools'))
+                const e = await getCountFromServer(collection(db, 'equipment'))
 
-            setStats({
-                users: (u || 0).toString(),
-                schemes: (s || 0).toString(),
-                tools: (t || 0).toString(),
-                ads: (e || 0).toString()
-            })
+                setStats({
+                    users: u.data().count.toString(),
+                    schemes: s.data().count.toString(),
+                    tools: t.data().count.toString(),
+                    ads: e.data().count.toString()
+                })
+            } catch (err) {
+                console.error(err)
+            }
         }
         fetchStats()
     }, [])
@@ -181,8 +186,18 @@ function AdminPanel({ title }: { title: string }) {
 
     const fetchData = async () => {
         setLoading(true)
-        const { data } = await supabase.from(getTableName()).select('*').order('created_at', { ascending: false })
-        setItems(data || [])
+        const table = getTableName()
+        const collName = table === "profiles" ? "users" : table
+        try {
+            const q = query(collection(db, collName))
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout fetching data")), 5000))
+            const snapshot = await Promise.race([getDocs(q), timeoutPromise]) as any
+            const data = snapshot.docs.map((d: any) => ({ id: d.id, ...d.data() }))
+            setItems(data.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()))
+        } catch (err) {
+            console.error(err)
+            setItems([])
+        }
         setLoading(false)
     }
 
@@ -191,26 +206,34 @@ function AdminPanel({ title }: { title: string }) {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault()
         const table = getTableName()
-        const { error } = editingItem
-            ? await supabase.from(table).update(formData).eq('id', editingItem.id)
-            : await supabase.from(table).insert([formData])
+        const collName = table === "profiles" ? "users" : table
 
-        if (error) toast.error(error.message)
-        else {
+        try {
+            if (editingItem) {
+                await updateDoc(doc(db, collName, editingItem.id), formData)
+            } else {
+                await addDoc(collection(db, collName), { ...formData, created_at: new Date().toISOString() })
+            }
             toast.success("Success!")
             setIsAdding(false)
             setEditingItem(null)
             fetchData()
+        } catch (error: any) {
+            toast.error(error.message)
         }
     }
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure?")) return
-        const { error } = await supabase.from(getTableName()).delete().eq('id', id)
-        if (error) toast.error(error.message)
-        else {
+        const table = getTableName()
+        const collName = table === "profiles" ? "users" : table
+
+        try {
+            await deleteDoc(doc(db, collName, id))
             toast.success("Deleted")
             fetchData()
+        } catch (error: any) {
+            toast.error(error.message)
         }
     }
 

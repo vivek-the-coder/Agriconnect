@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, ExternalLink, Calendar, Users, DollarSign } from "lucide-react"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase"
+import { db } from "@/lib/firebase"
+import { collection, getDocs, query } from "firebase/firestore"
 import { useEffect } from "react"
 
 // Mock data for government schemes
@@ -106,11 +107,12 @@ export function SchemesDirectory() {
 
   useEffect(() => {
     async function fetchSchemes() {
-      const { data, error } = await supabase
-        .from('schemes')
-        .select('*')
+      const q = query(collection(db, 'schemes'))
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout fetching data")), 5000))
+      const snapshot = await Promise.race([getDocs(q), timeoutPromise]) as any
+      const data = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }))
 
-      if (!error && data && data.length > 0) {
+      if (data && data.length > 0) {
         setAllSchemes(data)
       }
     }

@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { auth } from "@/lib/firebase"
 
 // Add a type declaration for the Razorpay window object
 declare global {
@@ -108,6 +109,7 @@ export function CartSheet() {
                                 razorpay_signature: response.razorpay_signature,
                                 items,
                                 total,
+                                userId: auth.currentUser?.uid,
                             }),
                         });
 
@@ -134,6 +136,7 @@ export function CartSheet() {
                                     razorpay_order_id: orderData.id,
                                     items,
                                     total,
+                                    userId: auth.currentUser?.uid,
                                 }),
                             });
                             const failData = await failRes.json();
@@ -162,6 +165,7 @@ export function CartSheet() {
                             razorpay_order_id: orderData.id,
                             items,
                             total,
+                            userId: auth.currentUser?.uid,
                         }),
                     });
                     const failData = await failRes.json();

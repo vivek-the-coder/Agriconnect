@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { placeOrder } from "@/lib/checkout-handler";
 import type { CartItem } from "@/lib/cart-context";
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
 
 export async function POST(req: Request) {
     try {
@@ -12,31 +10,15 @@ export async function POST(req: Request) {
             total,
             shippingAddress,
             contactPhone,
+            userId, // Added userId
         } = await req.json();
 
-        // 1. Get the authenticated user securely on the server
-        const cookieStore = await cookies()
-
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value
-                    },
-                },
-            }
-        )
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (!userId) {
             return NextResponse.json(
                 { error: "Unauthorized" },
                 { status: 401 }
             );
         }
-        const userId = user.id;
 
         // Store the order as "Failed"
         const { orderId, error } = await placeOrder({
@@ -47,7 +29,6 @@ export async function POST(req: Request) {
             contactPhone: contactPhone as string,
             razorpayOrderId: razorpay_order_id as string,
             razorpayPaymentId: "FAILED",
-            supabaseClient: supabase,
             status: "Failed",
         });
 

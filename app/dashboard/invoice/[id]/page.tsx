@@ -1,50 +1,63 @@
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { Metadata } from "next"
 import { PrintInvoiceButton } from "@/components/print-invoice-button"
+import { db, auth } from "@/lib/firebase"
+import { doc, getDoc } from "firebase/firestore"
+import { onAuthStateChanged } from "firebase/auth"
 
-export const metadata: Metadata = {
-    title: "Invoice | AgriConnect",
-    description: "Your AgriConnect Order Invoice",
-}
+export default function InvoicePage() {
+    const params = useParams()
+    const router = useRouter()
+    const id = params.id as string
 
-export default async function InvoicePage({ params }: { params: { id: string } }) {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value
-                },
-            },
-        }
-    )
+    const [order, setOrder] = useState<any>(null)
+    const [user, setUser] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
 
-    // Verify Authentication
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-        redirect("/login")
+    useEffect(() => {
+        document.title = "Invoice | AgriConnect"
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (!currentUser) {
+                router.push("/login")
+                return
+            }
+            setUser(currentUser)
+
+            try {
+                const docRef = doc(db, "orders", id)
+                const docSnap = await getDoc(docRef)
+
+                if (docSnap.exists() && docSnap.data().user_id === currentUser.uid) {
+                    setOrder({ id: docSnap.id, ...docSnap.data() })
+                } else {
+                    setOrder(null)
+                }
+            } catch (err) {
+                console.error("Error fetching invoice:", err)
+                setOrder(null)
+            } finally {
+                setLoading(false)
+            }
+        })
+        return () => unsubscribe()
+    }, [id, router])
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="mt-4 text-muted-foreground">Loading invoice...</p>
+            </div>
+        )
     }
 
-    // Await params object cleanly
-    const { id } = await params;
-
-    // Fetch the specific order for this user
-    const { data: order, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .single()
-
-    if (error || !order) {
+    if (!order) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <h1 className="text-2xl font-bold mb-2">Invoice Not Found</h1>
@@ -56,7 +69,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
         )
     }
 
-    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items || [];
     const isPaid = order.razorpay_payment_id != null;
 
     return (
@@ -86,7 +99,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                         </div>
                         <div className="text-left sm:text-right">
                             <h2 className="text-3xl font-black text-green-900 uppercase tracking-wider mb-1">INVOICE</h2>
-                            <p className="text-sm font-medium text-green-800">#{order.id.split('-')[0].toUpperCase()}</p>
+                            <p className="text-sm font-medium text-green-800">#{order.id.split('-')[0]?.toUpperCase() || order.id}</p>
                             <p className="text-sm text-green-600">Date: {new Date(order.created_at).toLocaleDateString()}</p>
                         </div>
                     </div>
@@ -96,7 +109,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
                             <div>
                                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Billed To:</h3>
-                                <p className="font-semibold text-gray-900">{user.email}</p>
+                                <p className="font-semibold text-gray-900">{user?.email}</p>
                                 <p className="text-gray-600 text-sm mt-1">Phone: {order.contact_phone || "N/A"}</p>
                             </div>
                             <div className="sm:text-right">
@@ -115,7 +128,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                             </div>
                             <div className="text-right">
                                 <p className="text-sm opacity-80">Order Status</p>
-                                <p className="font-bold uppercase">{order.status}</p>
+                                <p className="font-bold uppercase">{order.status || 'processing'}</p>
                             </div>
                         </div>
 
@@ -155,7 +168,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                             <div className="w-full sm:w-1/3 space-y-3">
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>Subtotal</span>
-                                    <span>₹{order.total.toLocaleString("en-IN")}</span>
+                                    <span>₹{(order.total || 0).toLocaleString("en-IN")}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>Shipping</span>
@@ -163,7 +176,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                                 </div>
                                 <div className="flex justify-between text-lg font-bold text-gray-900 pt-3 border-t border-gray-200">
                                     <span>Total Amount</span>
-                                    <span>₹{order.total.toLocaleString("en-IN")}</span>
+                                    <span>₹{(order.total || 0).toLocaleString("en-IN")}</span>
                                 </div>
                             </div>
                         </div>

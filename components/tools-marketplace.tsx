@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
+import { db, auth } from "@/lib/firebase"
+import { collection, query, getDocs, addDoc } from "firebase/firestore"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -146,20 +147,12 @@ export function ToolsMarketplace() {
   const fetchTools = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('tools')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        if (error.code === 'PGRST116' || error.message?.includes("schema cache") || error.message?.includes("relation") || error.message?.includes("does not exist")) {
-          console.warn("Table 'tools' not found, falling back to mock data.")
-          setTools(mockToolsData)
-          return
-        }
-        console.error("Supabase error fetching tools:", error)
-        throw error
-      }
+      const q = query(collection(db, 'tools'))
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout fetching data")), 5000))
+      const snapshot = await Promise.race([getDocs(q), timeoutPromise]) as any
+      const data = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }))
+      // Sort client side
+      data.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
 
       if (!data || data.length === 0) {
         setTools(mockToolsData)
@@ -179,16 +172,13 @@ export function ToolsMarketplace() {
     e.preventDefault()
     try {
       setSubmitting(true)
-      const { data: { session } } = await supabase.auth.getSession()
-      const { error } = await supabase
-        .from('tools')
-        .insert([{
-          ...newListing,
-          image: '/placeholder.svg',
-          user_id: session?.user?.id || null,
-        }])
-
-      if (error) throw error
+      const sessionUser = auth.currentUser
+      await addDoc(collection(db, 'tools'), {
+        ...newListing,
+        image: '/placeholder.svg',
+        user_id: sessionUser?.uid || null,
+        created_at: new Date().toISOString()
+      })
 
       toast.success("Tool listing submitted successfully!")
       setNewListing({ name: "", category: "", price: "", type: "new", description: "", condition: "New" })

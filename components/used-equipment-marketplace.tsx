@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
+import { db, auth } from "@/lib/firebase"
+import { collection, query, getDocs, addDoc } from "firebase/firestore"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -117,19 +118,12 @@ export function UsedEquipmentMarketplace() {
   const fetchEquipment = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('equipment')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        if (error.code === 'PGRST116' || error.message?.includes("schema cache") || error.message?.includes("relation") || error.message?.includes("does not exist")) {
-          console.warn("Table 'equipment' not found, falling back to mock data.")
-          setEquipment(mockUsedEquipmentData)
-          return
-        }
-        throw error
-      }
+      const q = query(collection(db, 'equipment'))
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout fetching data")), 5000))
+      const snapshot = await Promise.race([getDocs(q), timeoutPromise]) as any
+      const data = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }))
+      // Sort client side
+      data.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
 
       if (!data || data.length === 0) {
         setEquipment(mockUsedEquipmentData)
@@ -149,17 +143,14 @@ export function UsedEquipmentMarketplace() {
     e.preventDefault()
     try {
       setSubmitting(true)
-      const { data: { session } } = await supabase.auth.getSession()
-      const { error } = await supabase
-        .from('equipment')
-        .insert([{
-          ...newListing,
-          status: 'Available',
-          image: '/placeholder.svg',
-          user_id: session?.user?.id || null,
-        }])
-
-      if (error) throw error
+      const sessionUser = auth.currentUser
+      await addDoc(collection(db, 'equipment'), {
+        ...newListing,
+        status: 'Available',
+        image: '/placeholder.svg',
+        user_id: sessionUser?.uid || null,
+        created_at: new Date().toISOString()
+      })
 
       toast.success("Equipment listed! Pending review.")
       setNewListing({ name: "", category: "", price: "", location: "", year: "", description: "", condition: "Good" })

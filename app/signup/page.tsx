@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sprout, Mail, Lock, User, Loader2, ArrowRight, ShieldCheck } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { auth, db } from "@/lib/firebase"
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile } from "firebase/auth"
+import { doc, setDoc } from "firebase/firestore"
 import { Navigation } from "@/components/navigation"
 import { toast } from "sonner"
 
@@ -24,25 +26,23 @@ export default function SignUpPage() {
         setIsLoading(true)
 
         try {
-            const { error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    emailRedirectTo: `${window.location.origin}/login`,
-                    data: {
-                        full_name: fullName,
-                    },
-                },
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+            const user = userCredential.user
+
+            // Update Auth Profile
+            await updateProfile(user, { displayName: fullName })
+
+            // Create a user document in Firestore to mimic Supabase user profiles
+            await setDoc(doc(db, "users", user.uid), {
+                full_name: fullName,
+                email: email,
+                created_at: new Date().toISOString()
             })
 
-            if (error) {
-                toast.error(error.message)
-            } else {
-                toast.success("Account created! Please check your email for verification.")
-                router.push("/login")
-            }
-        } catch (error) {
-            toast.error("An unexpected error occurred")
+            toast.success("Account created successfully!")
+            router.push("/login")
+        } catch (error: any) {
+            toast.error(error.message || "An unexpected error occurred")
         } finally {
             setIsLoading(false)
         }
@@ -51,13 +51,19 @@ export default function SignUpPage() {
     const handleGoogleLogin = async () => {
         setIsLoading(true)
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
-                },
-            })
-            if (error) throw error
+            const provider = new GoogleAuthProvider()
+            const result = await signInWithPopup(auth, provider)
+
+            // Make sure the user document exists
+            await setDoc(doc(db, "users", result.user.uid), {
+                full_name: result.user.displayName || "User",
+                email: result.user.email,
+                created_at: new Date().toISOString()
+            }, { merge: true }) // Merge true so we don't overwrite if it exists
+
+            toast.success("Signed up with Google successfully!")
+            router.push("/")
+            router.refresh()
         } catch (error: any) {
             toast.error(error.message || "Failed to sign in with Google")
             setIsLoading(false)

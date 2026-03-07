@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sprout, Mail, Lock, Loader2, ArrowRight } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { auth } from "@/lib/firebase"
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { Navigation } from "@/components/navigation"
 import { toast } from "sonner"
 
@@ -23,20 +24,12 @@ export default function LoginPage() {
         setIsLoading(true)
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            })
-
-            if (error) {
-                toast.error(error.message)
-            } else {
-                toast.success("Logged in successfully!")
-                router.push("/")
-                router.refresh()
-            }
-        } catch (error) {
-            toast.error("An unexpected error occurred")
+            await signInWithEmailAndPassword(auth, email, password)
+            toast.success("Logged in successfully!")
+            router.push("/")
+            router.refresh()
+        } catch (error: any) {
+            toast.error(error.message || "An unexpected error occurred")
         } finally {
             setIsLoading(false)
         }
@@ -45,13 +38,11 @@ export default function LoginPage() {
     const handleGoogleLogin = async () => {
         setIsLoading(true)
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
-                },
-            })
-            if (error) throw error
+            const provider = new GoogleAuthProvider()
+            await signInWithPopup(auth, provider)
+            toast.success("Logged in with Google successfully!")
+            router.push("/")
+            router.refresh()
         } catch (error: any) {
             toast.error(error.message || "Failed to sign in with Google")
             setIsLoading(false)

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { db } from "@/lib/firebase"
+import { collection, addDoc } from "firebase/firestore"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,11 +25,10 @@ export default function ContactForm() {
     setLoading(true)
 
     try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert([formData])
-
-      if (error) throw error
+      await addDoc(collection(db, 'contact_messages'), {
+        ...formData,
+        created_at: new Date().toISOString()
+      })
 
       toast.success("Message sent successfully! We'll get back to you soon.")
       setFormData({ name: "", email: "", subject: "", message: "" })

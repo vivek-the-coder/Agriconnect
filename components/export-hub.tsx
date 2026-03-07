@@ -126,7 +126,8 @@ const jointVentures = [
   },
 ]
 
-import { supabase } from "@/lib/supabase"
+import { db, auth } from "@/lib/firebase"
+import { collection, query, getDocs, addDoc } from "firebase/firestore"
 import { toast } from "sonner"
 import { useEffect } from "react"
 
@@ -159,13 +160,18 @@ export function ExportHub() {
   }, [])
 
   const fetchListings = async () => {
-    const { data, error } = await supabase
-      .from('export_crops')
-      .select('*')
-      .order('created_at', { ascending: false })
+    try {
+      const q = query(collection(db, 'export_crops'))
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout fetching data")), 5000))
+      const snapshot = await Promise.race([getDocs(q), timeoutPromise]) as any
+      const data = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }))
+      data.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
 
-    if (!error && data && data.length > 0) {
-      setAllListings([...data, ...cropListings])
+      if (data.length > 0) {
+        setAllListings([...data, ...cropListings])
+      }
+    } catch (e) {
+      console.error(e)
     }
   }
 
@@ -184,31 +190,16 @@ export function ExportHub() {
     e.preventDefault()
     setLoading(true)
 
-    const { data: { session } } = await supabase.auth.getSession()
+    const sessionUser = auth.currentUser
 
     const cropToInsert = {
-      cropname: cropForm.cropname,
-      variety: cropForm.variety,
-      quantity: cropForm.quantity,
-      location: cropForm.location,
-      farmer: cropForm.farmer,
-      contact: cropForm.contact,
-      email: cropForm.email,
-      pricerange: cropForm.pricerange,
-      harvestdate: cropForm.harvestdate,
-      quality: cropForm.quality,
-      organic: cropForm.organic,
-      description: cropForm.description,
-      user_id: session?.user?.id || null,
+      ...cropForm,
+      user_id: sessionUser?.uid || null,
+      created_at: new Date().toISOString()
     }
 
-    const { error } = await supabase
-      .from('export_crops')
-      .insert([cropToInsert])
-
-    if (error) {
-      toast.error("Failed to list crop: " + error.message)
-    } else {
+    try {
+      await addDoc(collection(db, 'export_crops'), cropToInsert)
       toast.success("Crop listed successfully for export!")
       setActiveTab("browse")
       fetchListings()
@@ -227,6 +218,8 @@ export function ExportHub() {
         organic: false,
         description: "",
       })
+    } catch (error: any) {
+      toast.error("Failed to list crop: " + error.message)
     }
     setLoading(false)
   }

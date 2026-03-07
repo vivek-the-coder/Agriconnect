@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { placeOrder } from "@/lib/checkout-handler";
 import type { CartItem } from "@/lib/cart-context";
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 
 export async function POST(req: Request) {
     try {
@@ -15,31 +13,15 @@ export async function POST(req: Request) {
             total,
             shippingAddress,
             contactPhone,
+            userId, // Added userId to payload
         } = await req.json();
 
-        // 1. Get the authenticated user securely on the server
-        const cookieStore = await cookies()
-
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value
-                    },
-                },
-            }
-        )
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (!userId) {
             return NextResponse.json(
-                { error: "Unauthorized. You must be logged in." },
+                { error: "Unauthorized. User ID is missing in payload." },
                 { status: 401 }
             );
         }
-        const userId = user.id;
 
         // Verify the payment signature securely
         const secret = process.env.RAZORPAY_KEY_SECRET!;
@@ -59,7 +41,7 @@ export async function POST(req: Request) {
             );
         }
 
-        // Since payment is valid, store the order firmly in Supabase!
+        // Since payment is valid, store the order firmly in Firestore
         const { orderId, error } = await placeOrder({
             userId,
             items: items as CartItem[],
@@ -68,7 +50,6 @@ export async function POST(req: Request) {
             contactPhone: contactPhone as string,
             razorpayOrderId: razorpay_order_id as string,
             razorpayPaymentId: razorpay_payment_id as string,
-            supabaseClient: supabase,
             status: "Confirmed",
         });
 
