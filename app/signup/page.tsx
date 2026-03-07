@@ -39,12 +39,15 @@ export default function SignUpPage() {
                 created_at: new Date().toISOString()
             })
 
-            // Send Verification Email
-            await sendEmailVerification(user)
-            await signOut(auth)
+            // Send Verification Email with redirect URL
+            const actionCodeSettings = {
+                url: `${window.location.origin}/`,
+                handleCodeInApp: false,
+            }
+            await sendEmailVerification(user, actionCodeSettings)
 
-            toast.success("Account created! Please check your email to verify your account before logging in.")
-            router.push("/login")
+            toast.success("Account created! Please check your email to verify your account.")
+            router.push("/")
         } catch (error: any) {
             toast.error(error.message || "An unexpected error occurred")
         } finally {
