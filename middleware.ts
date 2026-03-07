@@ -1,12 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-    let response = NextResponse.next({
-        request: {
-            headers: request.headers,
-        },
+    let supabaseResponse = NextResponse.next({
+        request,
     })
 
     const supabase = createServerClient(
@@ -19,48 +16,50 @@ export async function middleware(request: NextRequest) {
                 },
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
+                    supabaseResponse = NextResponse.next({
+                        request,
                     })
                     cookiesToSet.forEach(({ name, value, options }) =>
-                        response.cookies.set(name, value, { ...options, path: '/' })
+                        supabaseResponse.cookies.set(name, value, options)
                     )
                 },
             },
         }
     )
 
+    // IMPORTANT: Avoid writing any logic between createServerClient and
+    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+    // issues with users being randomly logged out.
+
     const {
         data: { user },
-        error
     } = await supabase.auth.getUser()
 
-    console.log('Middleware Path:', request.nextUrl.pathname)
-    console.log('Middleware User:', user?.email || 'None')
-    if (error) console.error('Middleware Auth Error:', error.message)
+    // Protected Routes
+    const isProtected = request.nextUrl.pathname.startsWith('/dashboard') ||
+        request.nextUrl.pathname.startsWith('/admin')
 
-    // Protect admin routes
+    if (isProtected && !user) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        // IMPORTANT: Copy cookies to the redirect response!
+        const redirectResponse = NextResponse.redirect(url)
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+            redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+        })
+        return redirectResponse
+    }
+
+    // Role check for admin
     if (request.nextUrl.pathname.startsWith('/admin')) {
-        if (!user) {
-            return NextResponse.redirect(new URL('/login', request.url))
-        }
-
-        // Role check
-        if (user.email !== 'admin@agro.com') {
-            return NextResponse.redirect(new URL('/', request.url))
+        if (user?.email !== 'admin@agro.com') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/'
+            return NextResponse.redirect(url)
         }
     }
 
-    // Protect dashboard routes (any authenticated user)
-    if (request.nextUrl.pathname.startsWith('/dashboard')) {
-        if (!user) {
-            return NextResponse.redirect(new URL('/login', request.url))
-        }
-    }
-
-    return response
+    return supabaseResponse
 }
 
 export const config = {

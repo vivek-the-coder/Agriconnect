@@ -8,9 +8,6 @@ export const supabase = createBrowserClient(
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: true,
-            // Using a manual lock manager behavior or different storage can help with 
-            // the lock timeout issue. Here we ensure basic config is explicitly set.
-            storageKey: 'agriconnect-auth-token',
             flowType: 'pkce'
         }
     }
