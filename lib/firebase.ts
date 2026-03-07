@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyD4_tfSSzNRNhodd08BMNxAOSnqM_9ASJU",
-    authDomain: "agriconnect-42482.firebaseapp.com",
-    projectId: "agriconnect-42482",
-    storageBucket: "agriconnect-42482.firebasestorage.app",
-    messagingSenderId: "368614265321",
-    appId: "1:368614265321:web:5994eddcf0c655371bfb78",
-    measurementId: "G-WVH0NFF58W"
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID!
 };
 
 // Initialize Firebase only if it hasn't been initialized already
