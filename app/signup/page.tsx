@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sprout, Mail, Lock, User, Loader2, ArrowRight, ShieldCheck } from "lucide-react"
 import { auth, db } from "@/lib/firebase"
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile, sendEmailVerification, signOut } from "firebase/auth"
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile } from "firebase/auth"
 import { doc, setDoc } from "firebase/firestore"
 import { Navigation } from "@/components/navigation"
 import { toast } from "sonner"
@@ -39,15 +39,8 @@ export default function SignUpPage() {
                 created_at: new Date().toISOString()
             })
 
-            // Send Verification Email with redirect URL
-            const actionCodeSettings = {
-                url: `${window.location.origin}/`,
-                handleCodeInApp: false,
-            }
-            await sendEmailVerification(user, actionCodeSettings)
-
-            toast.success("Account created! Please check your email to verify your account.")
-            router.push("/")
+            toast.success("Account created successfully!")
+            router.push("/login")
         } catch (error: any) {
             toast.error(error.message || "An unexpected error occurred")
         } finally {
