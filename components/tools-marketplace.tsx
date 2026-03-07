@@ -44,6 +44,7 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
+import { ImageUploader } from "@/components/image-uploader"
 
 const mockRentalsData = [
   {
@@ -113,6 +114,7 @@ export function ToolsMarketplace() {
   const { addItem } = useCart()
 
   const [submitting, setSubmitting] = useState(false)
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [newListing, setNewListing] = useState({
     name: "",
     category: "",
@@ -176,7 +178,8 @@ export function ToolsMarketplace() {
         ...newListing,
         rentalPrice: Number(newListing.rentalPrice),
         minHours: Number(newListing.minHours) || 1,
-        image: "/placeholder.svg",
+        images: uploadedImages,
+        image: uploadedImages[0] || "/placeholder.svg",
         owner: sessionUser.displayName || sessionUser.email?.split("@")[0] || "Anonymous",
         user_id: sessionUser.uid,
         rating: 0,
@@ -188,6 +191,7 @@ export function ToolsMarketplace() {
 
       toast.success("Equipment listed for rent successfully!")
       setNewListing({ name: "", category: "", rentalPrice: "", rentUnit: "hour", minHours: "", location: "", availableFrom: "", availableTo: "", description: "" })
+      setUploadedImages([])
       fetchRentals()
     } catch (err: any) {
       toast.error(err.message || "Failed to list equipment")
@@ -406,6 +410,15 @@ export function ToolsMarketplace() {
                         required
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Photos (up to 5)</Label>
+                    <ImageUploader
+                      images={uploadedImages}
+                      onImagesChange={setUploadedImages}
+                      folder="listings/rentals"
+                      maxImages={5}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Description *</Label>

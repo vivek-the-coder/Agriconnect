@@ -37,6 +37,7 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
+import { ImageUploader } from "@/components/image-uploader"
 
 const mockUsedEquipmentData = [
   {
@@ -110,6 +111,7 @@ export function UsedEquipmentMarketplace() {
     description: "",
     condition: "Good"
   })
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
 
   useEffect(() => {
     fetchEquipment()
@@ -147,13 +149,15 @@ export function UsedEquipmentMarketplace() {
       await addDoc(collection(db, 'equipment'), {
         ...newListing,
         status: 'Available',
-        image: '/placeholder.svg',
+        images: uploadedImages,
+        image: uploadedImages[0] || '/placeholder.svg',
         user_id: sessionUser?.uid || null,
         created_at: new Date().toISOString()
       })
 
       toast.success("Equipment listed! Pending review.")
       setNewListing({ name: "", category: "", price: "", location: "", year: "", description: "", condition: "Good" })
+      setUploadedImages([])
       setActiveTab("buy")
       fetchEquipment()
     } catch (err: any) {
@@ -329,6 +333,15 @@ export function UsedEquipmentMarketplace() {
                   <div className="space-y-2">
                     <Label>Description *</Label>
                     <Textarea value={newListing.description} onChange={e => setNewListing({ ...newListing, description: e.target.value })} required rows={4} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Photos (up to 5)</Label>
+                    <ImageUploader
+                      images={uploadedImages}
+                      onImagesChange={setUploadedImages}
+                      folder="listings/equipment"
+                      maxImages={5}
+                    />
                   </div>
                   <Button type="submit" className="w-full py-6" disabled={submitting}>
                     {submitting ? <Loader2 className="animate-spin" /> : "List Equipment for Sale"}

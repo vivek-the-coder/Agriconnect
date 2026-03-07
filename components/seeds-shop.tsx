@@ -39,6 +39,7 @@ import {
   Plus,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
+import { ImageUploader } from "@/components/image-uploader"
 
 const seedsData = [
   {
@@ -105,6 +106,7 @@ export function SeedsShop() {
   const { addItem } = useCart()
 
   const [submitting, setSubmitting] = useState(false)
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [newListing, setNewListing] = useState({
     name: "",
     category: "",
@@ -160,13 +162,15 @@ export function SeedsShop() {
       const sessionUser = auth.currentUser
       await addDoc(collection(db, 'seeds'), {
         ...newListing,
-        image: '/placeholder.svg',
+        images: uploadedImages,
+        image: uploadedImages[0] || '/placeholder.svg',
         user_id: sessionUser?.uid || null,
         created_at: new Date().toISOString()
       })
 
       toast.success("Seed listing submitted successfully!")
       setNewListing({ name: "", category: "", price: "", unit: "pkt", description: "", stock: "" })
+      setUploadedImages([])
       fetchSeeds()
     } catch (err: any) {
       toast.error(err.message || "Failed to list seeds")
@@ -345,6 +349,15 @@ export function SeedsShop() {
                   <div className="space-y-2">
                     <Label>Description *</Label>
                     <Textarea value={newListing.description} onChange={e => setNewListing({ ...newListing, description: e.target.value })} required rows={4} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Photos (up to 5)</Label>
+                    <ImageUploader
+                      images={uploadedImages}
+                      onImagesChange={setUploadedImages}
+                      folder="listings/seeds"
+                      maxImages={5}
+                    />
                   </div>
                   <Button type="submit" className="w-full py-6" disabled={submitting}>
                     {submitting ? <Loader2 className="animate-spin mr-2" /> : <Plus className="mr-2 h-4 w-4" />}
